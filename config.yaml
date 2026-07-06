@@ -63,10 +63,11 @@ filters:
 # ─────────────────────────────────────────────────────────────
 # Companies on supported ATS platforms.
 #   ats: greenhouse | lever | ashby | workday
-# Slugs marked "verify" are best guesses — run discover.py to confirm.
+# All entries below verified via discover.py or live board URLs
+# (Jul 2026), except the two marked "reconcile".
 # ─────────────────────────────────────────────────────────────
 companies:
-  # ---- AI data / annotation companies ----
+  # ---- AI data / annotation / health AI companies ----
   - name: Scale AI
     ats: greenhouse
     slug: scaleai
@@ -78,60 +79,63 @@ companies:
     slug: snorkelai
   - name: SuperAnnotate
     ats: lever
-    slug: superannotate          # verify
+    slug: superannotate          # reconcile with your discover.py output
   - name: Surge AI
     ats: ashby
-    slug: surgeai                # verify (also try: surge)
+    slug: surge-ai               # reconcile with your discover.py output
   - name: Mercor
     ats: ashby
-    slug: mercor                 # verify
+    slug: mercor
   - name: Turing
-    ats: ashby
-    slug: turing                 # verify (also probes greenhouse: turing)
+    ats: greenhouse
+    slug: turing
   - name: Invisible Technologies
-    ats: ashby
-    slug: invisible-technologies # verify
+    ats: greenhouse
+    slug: invisible
   - name: Abridge
     ats: ashby
-    slug: abridge                # verify (also probes greenhouse)
+    slug: abridge
   - name: Innovaccer
     ats: greenhouse
-    slug: innovaccer             # verify
+    slug: innovaccer
   - name: Tempus AI
     ats: greenhouse
-    slug: tempus                 # verify
+    slug: tempus
 
   # ---- Workday tenants (healthcare / enterprise) ----
   # Find tenant/host/site from the careers URL:
   #   https://<tenant>.<host>.myworkdayjobs.com/<site>/...
-  - name: Optum / UHG
-    ats: workday
-    tenant: uhg
-    host: wd1
-    site: External_Career_Site   # verify with discover.py
-    search_terms: ["product manager", "technical program manager", "AI data"]
   - name: Athenahealth
     ats: workday
     tenant: athenahealth
     host: wd1
-    site: External               # verify
+    site: External
     search_terms: ["product manager", "program manager"]
   - name: Mass General Brigham
     ats: workday
-    tenant: partners
+    tenant: massgeneralbrigham
     host: wd1
-    site: MGBExternal            # verify
+    site: MGBExternal
     search_terms: ["AI", "data product", "program manager"]
-  - name: Duke Health
+  - name: Cleveland Clinic
     ats: workday
-    tenant: dukeuniversity
+    tenant: ccf
     host: wd1
-    site: External_Career_Site   # verify
+    site: ClevelandClinicCareers
     search_terms: ["AI", "data", "program manager"]
 
-# Companies on custom/unsupported ATS (Epic, Mayo Clinic, UMN, Stanford
-# Health Care, Cleveland Clinic, Microsoft, Oracle Health) are covered by
-# the LinkedIn searches below.
+  # ---- Candidates to probe when expanding coverage ----
+  # Run:  python discover.py "Anthropic" "OpenAI" "Cohere" "Handshake" \
+  #         "Appen" "iMerit" "Sama" "Toloka" "Prolific" "Micro1" \
+  #         "Pareto" "Ambience Healthcare" "Suki" "Nabla" "Datavant" \
+  #         "Truveta" "Komodo Health" "Flatiron Health" "Verily"
+  # …then paste the verified YAML here.
+
+# Companies on custom/unsupported ATS — no public board to poll — are
+# covered by the LinkedIn searches below: Optum/UHG (Radancy portal;
+# also check the internal mobility site as an employee), Duke Health
+# (Phenom), Epic, Mayo Clinic, UMN, Stanford Health Care, Microsoft,
+# Oracle Health.
 linkedin:
   enabled: true
   location: "United States"
@@ -146,7 +150,8 @@ linkedin:
     - "Epic Systems product manager"
     - "Mayo Clinic AI program manager"
     - "Stanford Health Care data product"
-    - "Cleveland Clinic AI data"
+    - "Duke Health AI data"
+    - "Optum data product manager"
     - "Microsoft AI data product manager"
     - "Oracle Health product manager"
     - "University of Minnesota AI program"

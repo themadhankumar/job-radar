@@ -76,9 +76,13 @@ covered by the LinkedIn searches — tune those queries in `config.yaml`.
    name it `Job Radar`, workspace = yours, capabilities: *Insert content* +
    *Read content*. Copy the **Internal Integration Secret**.
 2. `cp .env.example .env` and paste the token as `NOTION_TOKEN`.
-3. Create the database — two options:
-   - **Automatic**: open (or create) a Notion page to hold the tracker, click
-     `••• → Copy link`, grab the 32-char ID at the end of the URL, then:
+3. Open (or create) the Notion page that will hold the tracker and
+   **connect the integration to it first**: `••• → Connections → Job Radar`.
+   (The API can't create or write to anything it hasn't been connected to —
+   skipping this causes 404s.)
+4. Create the database — two options:
+   - **Automatic**: on that page, click `••• → Copy link`, grab the 32-char
+     ID at the end of the URL, then:
      ```bash
      python notion_sync.py --create-db <PAGE_ID>
      ```
@@ -87,9 +91,8 @@ covered by the LinkedIn searches — tune those queries in `config.yaml`.
      **Company** (select), **URL** (url), **Location** (text),
      **Posted date** (date), **Keywords matched** (multi-select),
      **Source** (select), **Status** (select: New / Reviewing / Applied /
-     Interviewing / Offer / Rejected / Skipped). Copy its ID from the URL.
-4. **Connect the integration to the database**: open the database page →
-   `••• → Connections → Job Radar`. (Skipping this causes 404s.)
+     Interviewing / Offer / Rejected / Skipped). Copy its ID from the URL
+     and connect the integration to it.
 
 ## Scheduling
 
