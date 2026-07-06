@@ -1,0 +1,44 @@
+name: job-radar-daily
+
+on:
+  schedule:
+    - cron: "30 14 * * *"   # 14:30 UTC ≈ 9:30 AM Central (8:30 AM during CST)
+  workflow_dispatch: {}      # manual "Run workflow" button
+
+permissions:
+  contents: write            # needed to commit the state DB back
+
+concurrency:
+  group: job-radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Job Radar
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        # LinkedIn is skipped on Actions: datacenter IPs get blocked quickly,
+        # and it keeps runs fast. Run LinkedIn locally via launchd instead.
+        run: python main.py --no-linkedin
+
+      - name: Commit updated state
+        run: |
+          git config user.name "job-radar-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/seen_jobs.db
+          git diff --cached --quiet || git commit -m "chore: update seen-jobs state [skip ci]"
+          git push

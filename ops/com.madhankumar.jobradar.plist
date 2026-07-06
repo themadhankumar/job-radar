@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.madhankumar.jobradar</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>-lc</string>
+        <string>cd $HOME/job-radar && $HOME/job-radar/.venv/bin/python main.py >> $HOME/job-radar/state/run.log 2>&1</string>
+    </array>
+
+    <!-- Run daily at 9:00 AM local time -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Also run at load, and catch up if the Mac was asleep at 9 AM -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/jobradar.out</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/jobradar.err</string>
+</dict>
+</plist>

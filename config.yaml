@@ -1,0 +1,157 @@
+# ─────────────────────────────────────────────────────────────
+# Job Radar — configuration
+# Run `python discover.py` to verify/refresh ATS slugs below.
+# ─────────────────────────────────────────────────────────────
+
+filters:
+  # A job matches if ANY include keyword appears in the matched fields.
+  include_keywords:
+    - "ai data product manager"
+    - "data product manager"
+    - "data operations"
+    - "annotation"
+    - "labeling"
+    - "labelling"
+    - "technical program manager"
+    - "ml platform"
+    - "ai platform"
+    - "human-in-the-loop"
+    - "human in the loop"
+    - "data engine"
+    - "evaluation"
+    - "rlhf"
+    - "data quality"
+    - "product manager, ai"
+    - "product manager - ai"
+
+  # A job is dropped if ANY exclude keyword appears in title or description.
+  exclude_keywords:
+    - "intern"
+    - "internship"
+    - "vice president"
+    - "vp,"
+    - "principal director"
+
+  # Which fields include_keywords are matched against.
+  match_fields: [title, description]
+
+  # If true, at least one include keyword must appear in the TITLE
+  # (descriptions mention "evaluation"/"annotation" constantly — flip this
+  # on if you get too much noise).
+  require_title_match: false
+
+  # Job kept if its location contains ANY of these strings (case-insensitive).
+  # Empty list = allow all locations. Jobs with a blank location are kept.
+  locations_allow:
+    - "remote"
+    - "united states"
+    - "usa"
+    - "u.s."
+    - "minneapolis"
+    - "minnesota"
+    - "new york"
+    - "san francisco"
+    - "bay area"
+    - "seattle"
+    - "austin"
+    - "boston"
+    - "chicago"
+
+  # Drop postings older than this many days (when the ATS reports a date).
+  posted_within_days: 21
+
+# ─────────────────────────────────────────────────────────────
+# Companies on supported ATS platforms.
+#   ats: greenhouse | lever | ashby | workday
+# Slugs marked "verify" are best guesses — run discover.py to confirm.
+# ─────────────────────────────────────────────────────────────
+companies:
+  # ---- AI data / annotation companies ----
+  - name: Scale AI
+    ats: greenhouse
+    slug: scaleai
+  - name: Labelbox
+    ats: greenhouse
+    slug: labelbox
+  - name: Snorkel AI
+    ats: greenhouse
+    slug: snorkelai
+  - name: SuperAnnotate
+    ats: lever
+    slug: superannotate          # verify
+  - name: Surge AI
+    ats: ashby
+    slug: surgeai                # verify (also try: surge)
+  - name: Mercor
+    ats: ashby
+    slug: mercor                 # verify
+  - name: Turing
+    ats: ashby
+    slug: turing                 # verify (also probes greenhouse: turing)
+  - name: Invisible Technologies
+    ats: ashby
+    slug: invisible-technologies # verify
+  - name: Abridge
+    ats: ashby
+    slug: abridge                # verify (also probes greenhouse)
+  - name: Innovaccer
+    ats: greenhouse
+    slug: innovaccer             # verify
+  - name: Tempus AI
+    ats: greenhouse
+    slug: tempus                 # verify
+
+  # ---- Workday tenants (healthcare / enterprise) ----
+  # Find tenant/host/site from the careers URL:
+  #   https://<tenant>.<host>.myworkdayjobs.com/<site>/...
+  - name: Optum / UHG
+    ats: workday
+    tenant: uhg
+    host: wd1
+    site: External_Career_Site   # verify with discover.py
+    search_terms: ["product manager", "technical program manager", "AI data"]
+  - name: Athenahealth
+    ats: workday
+    tenant: athenahealth
+    host: wd1
+    site: External               # verify
+    search_terms: ["product manager", "program manager"]
+  - name: Mass General Brigham
+    ats: workday
+    tenant: partners
+    host: wd1
+    site: MGBExternal            # verify
+    search_terms: ["AI", "data product", "program manager"]
+  - name: Duke Health
+    ats: workday
+    tenant: dukeuniversity
+    host: wd1
+    site: External_Career_Site   # verify
+    search_terms: ["AI", "data", "program manager"]
+
+# Companies on custom/unsupported ATS (Epic, Mayo Clinic, UMN, Stanford
+# Health Care, Cleveland Clinic, Microsoft, Oracle Health) are covered by
+# the LinkedIn searches below.
+linkedin:
+  enabled: true
+  location: "United States"
+  pages_per_search: 3            # 25 results per page
+  remote_only: false             # true adds f_WT=2 (remote filter)
+  searches:
+    - "AI data product manager"
+    - "data annotation product manager"
+    - "technical program manager AI healthcare"
+    - "ML data operations manager"
+    - "human in the loop product"
+    - "Epic Systems product manager"
+    - "Mayo Clinic AI program manager"
+    - "Stanford Health Care data product"
+    - "Cleveland Clinic AI data"
+    - "Microsoft AI data product manager"
+    - "Oracle Health product manager"
+    - "University of Minnesota AI program"
+
+notion:
+  enabled: true                  # needs NOTION_TOKEN + NOTION_DATABASE_ID in env/.env
+
+state_db: state/seen_jobs.db
