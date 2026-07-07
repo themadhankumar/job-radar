@@ -90,7 +90,9 @@ def user_matched_jobs_since(conn, user_id: int, since: datetime) -> list[dict]:
             )
           )
           AND NOT EXISTS (SELECT 1 FROM kw WHERE kind='exclude' AND j.title ILIKE '%%'||keyword||'%%')
-        ORDER BY j.posted_at DESC NULLS LAST
+        ORDER BY (SELECT s.score FROM user_job_scores s
+                    WHERE s.user_id = %(uid)s AND s.job_id = j.id) DESC NULLS LAST,
+                 j.posted_at DESC NULLS LAST
         LIMIT 100
         """,
         {"uid": user_id, "since": since},
