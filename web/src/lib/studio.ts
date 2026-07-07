@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { decrypt } from "@/lib/crypto";
+import { htmlToText } from "@/lib/text";
 
 export const STUDIO_MODEL = "claude-opus-4-8";
 
@@ -165,8 +166,6 @@ export async function callAnthropic(opts: {
   };
 }
 
-const clean = (s: string) => s.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-
 export function studioSystemPrompt(job: {
   title: string;
   companyName: string;
@@ -181,7 +180,7 @@ export function studioSystemPrompt(job: {
     `Title: ${job.title}`,
     `Company: ${job.companyName}`,
     `Location: ${job.location || "n/a"}`,
-    `Description: ${clean(job.description).slice(0, 8000) || "(no description available — reason from the title)"}`,
+    `Description: ${htmlToText(job.description).slice(0, 8000) || "(no description available — reason from the title)"}`,
     "",
     `## User's base resume (extracted text)`,
     resumeText.slice(0, 12000),

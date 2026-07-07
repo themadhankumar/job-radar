@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
+import { htmlToText } from "@/lib/text";
 
 export type JobRow = {
   id: number;
@@ -155,7 +156,7 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
             <div className="surface rounded-lg p-4">
               <p className="t-muted mb-2 text-xs font-medium uppercase tracking-wide">Description preview</p>
               <p className="whitespace-pre-line text-sm leading-relaxed">
-                {open.description ? open.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 1200) : "This source doesn't include a description — open the posting for details."}
+                {open.description ? htmlToText(open.description).slice(0, 1200) : "This source doesn't include a description — open the posting for details."}
               </p>
             </div>
             <p className="t-muted mt-4 text-xs">Open the ✦ Studio tab to tailor your resume to this job.</p>
