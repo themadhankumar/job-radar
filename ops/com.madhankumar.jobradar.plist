@@ -5,30 +5,21 @@
 <dict>
     <key>Label</key>
     <string>com.madhankumar.jobradar</string>
-
+    <!-- Local LinkedIn-inclusive fetch. Writes to the same Neon database.
+         Requires ~/job-radar/pipeline/.env with DATABASE_URL + ENCRYPTION_KEY. -->
     <key>ProgramArguments</key>
     <array>
         <string>/bin/zsh</string>
         <string>-lc</string>
-        <string>cd $HOME/job-radar && $HOME/job-radar/.venv/bin/python main.py >> $HOME/job-radar/state/run.log 2>&1</string>
+        <string>cd $HOME/job-radar/pipeline && $HOME/job-radar/pipeline/.venv/bin/python main.py --no-notion >> /tmp/jobradar.log 2>&1</string>
     </array>
-
-    <!-- Run daily at 9:00 AM local time -->
     <key>StartCalendarInterval</key>
     <dict>
-        <key>Hour</key>
-        <integer>9</integer>
-        <key>Minute</key>
-        <integer>0</integer>
+        <key>Hour</key><integer>12</integer>
+        <key>Minute</key><integer>0</integer>
     </dict>
-
-    <!-- Also run at load, and catch up if the Mac was asleep at 9 AM -->
-    <key>RunAtLoad</key>
-    <false/>
-
-    <key>StandardOutPath</key>
-    <string>/tmp/jobradar.out</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/jobradar.err</string>
+    <key>RunAtLoad</key><false/>
+    <key>StandardOutPath</key><string>/tmp/jobradar.out</string>
+    <key>StandardErrorPath</key><string>/tmp/jobradar.err</string>
 </dict>
 </plist>
