@@ -90,6 +90,13 @@ def main() -> int:
 
     console.print(f"\n[bold green]{total_new} new postings[/bold green] stored this run.")
 
+    # ---- Enrichment + scoring ----
+    from extract import enrich_new_jobs
+    from score import compute_scores
+    enriched = enrich_new_jobs(conn)
+    scored = compute_scores(conn)
+    console.print(f"[dim]enriched {enriched} jobs, refreshed {scored} match scores[/dim]")
+
     # ---- Per-user Notion push ----
     if not args.no_notion and total_new > 0:
         from notion_push import push_for_user

@@ -2,7 +2,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-export function RadarFilters({ tab, q, days, status }: { tab: string; q: string; days: number; status: string }) {
+export function RadarFilters({ tab, q, days, status, sort }: { tab: string; q: string; days: number; status: string; sort: string }) {
   const router = useRouter();
   const params = useSearchParams();
   const [search, setSearch] = useState(q);
@@ -37,6 +37,11 @@ export function RadarFilters({ tab, q, days, status }: { tab: string; q: string;
         <option value="7">Past week</option>
         <option value="14">Past 2 weeks</option>
         <option value="30">Past month</option>
+      </select>
+      <select value={sort === "suggested" ? "" : sort} onChange={(e) => setParam("sort", e.target.value)} className="input w-auto">
+        <option value="">Suggested</option>
+        <option value="posted">Newest posted</option>
+        <option value="created">Newest found</option>
       </select>
       <select value={status} onChange={(e) => setParam("status", e.target.value)} className="input w-auto">
         <option value="">All statuses</option>

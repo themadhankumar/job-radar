@@ -14,7 +14,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   const q = (searchParams.q ?? "").trim();
   const days = Math.min(Math.max(parseInt(searchParams.days ?? "0") || 0, 0), 90);
   const statusFilter = searchParams.status ?? "";
-  const sort = searchParams.sort === "created" ? "created" : "posted";
+  const sort = ["posted", "created"].includes(searchParams.sort ?? "") ? searchParams.sort! : "suggested";
 
   const keywords = await db.select().from(schema.userKeywords).where(eq(schema.userKeywords.userId, user.id));
   const include = keywords.filter((k) => k.kind === "include").map((k) => k.keyword);
@@ -30,7 +30,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   if (tab === "tracked") {
     if (myCompanies.length === 0) {
       return (
-        <Shell tab={tab} q={q} days={days} status={statusFilter}>
+        <Shell tab={tab} q={q} days={days} status={statusFilter} sort={sort}>
           <Empty text="Add companies to your watchlist to light up this radar." />
         </Shell>
       );
@@ -80,28 +80,43 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       createdAt: schema.jobs.createdAt,
       description: sql<string>`left(${schema.jobs.description}, 1500)`,
       status: sql<string | null>`ujs.status`,
+      score: sql<number | null>`sc.score`,
+      payMin: schema.jobs.payMin,
+      payMax: schema.jobs.payMax,
+      payPeriod: schema.jobs.payPeriod,
+      yoeMin: schema.jobs.yoeMin,
+      sponsorApprovals: sql<number | null>`(SELECT sum(s.approvals)::int FROM sponsors s WHERE s.norm = norm_employer(${schema.jobs.companyName}) AND s.fiscal_year >= extract(year from now())::int - 3)`,
     })
     .from(schema.jobs)
     .leftJoin(
       sql`${schema.userJobStatus} AS ujs`,
       sql`ujs.job_id = ${schema.jobs.id} AND ujs.user_id = ${user.id}`,
     )
+    .leftJoin(
+      sql`user_job_scores AS sc`,
+      sql`sc.job_id = ${schema.jobs.id} AND sc.user_id = ${user.id}`,
+    )
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(
-      sort === "created" ? desc(schema.jobs.createdAt) : sql`${schema.jobs.postedAt} DESC NULLS LAST`,
+      sort === "created"
+        ? desc(schema.jobs.createdAt)
+        : sort === "posted"
+          ? sql`${schema.jobs.postedAt} DESC NULLS LAST`
+          : sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`,
     )
     .limit(200);
 
   let jobs: JobRow[] = rows.map((r) => ({
     ...r,
     status: r.status ?? "new",
+    score: r.score === null ? null : Math.round(Number(r.score)),
     postedAt: r.postedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
   }));
   if (statusFilter) jobs = jobs.filter((j) => j.status === statusFilter);
 
   return (
-    <Shell tab={tab} q={q} days={days} status={statusFilter}>
+    <Shell tab={tab} q={q} days={days} status={statusFilter} sort={sort}>
       {jobs.length === 0 ? (
         <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : "Nothing in the global feed matches your filters yet."} />
       ) : (
@@ -111,7 +126,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   );
 }
 
-function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string }) {
+function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string; sort: string }) {
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-8">
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">Radar</h1>

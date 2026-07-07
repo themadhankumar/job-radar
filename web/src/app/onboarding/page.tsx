@@ -27,6 +27,7 @@ export default function Onboarding() {
   const [suggested, setSuggested] = useState<Suggested[]>([]);
   const [picked, setPicked] = useState<Picked[]>([]);
   const [companyInput, setCompanyInput] = useState("");
+  const [suggestedFromResume, setSuggestedFromResume] = useState<string[]>([]);
   const [detecting, setDetecting] = useState(false);
   // step 4 — sponsorship
   const [needsSponsorship, setNeedsSponsorship] = useState(false);
@@ -131,6 +132,19 @@ export default function Onboarding() {
           <section>
             <h1 className="text-xl font-semibold">What roles are you hunting?</h1>
             <p className="t-muted mb-4 mt-1 text-sm">Jobs matching any of these keywords surface on your radar.</p>
+            {resumeName && (
+              <button className="btn-ghost mb-3 text-[rgb(var(--accent))]" disabled={busy}
+                onClick={async () => {
+                  setBusy(true); setError("");
+                  const r = await fetch("/api/onboarding/suggest", { method: "POST" });
+                  const d = await r.json(); setBusy(false);
+                  if (!r.ok) { setError(d.error ?? "No suggestions available."); return; }
+                  setKeywords((k) => [...new Set([...k, ...d.keywords])]);
+                  if (d.companies?.length) setSuggestedFromResume(d.companies);
+                }}>
+                {busy ? "Reading your resume…" : "✦ Suggest from my resume"}
+              </button>
+            )}
             <div className="mb-3 flex flex-wrap gap-1.5">
               {DEFAULT_KEYWORDS.filter((k) => !keywords.includes(k)).map((k) => (
                 <button key={k} className="chip t-muted hover:border-[rgb(var(--accent))]" onClick={() => setKeywords([...keywords, k])}>+ {k}</button>
@@ -169,6 +183,17 @@ export default function Onboarding() {
                 );
               })}
             </div>
+            {suggestedFromResume.filter((n) => !picked.some((p) => p.name.toLowerCase() === n.toLowerCase())).length > 0 && (
+              <div className="mb-3">
+                <p className="t-muted mb-1.5 text-xs">From your resume:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestedFromResume.filter((n) => !picked.some((p) => p.name.toLowerCase() === n.toLowerCase())).map((n) => (
+                    <button key={n} className="chip t-accent border-[rgb(var(--accent))]/40 hover:border-[rgb(var(--accent))]"
+                      onClick={() => { setCompanyInput(n); }}>✦ {n}</button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
               <input value={companyInput} onChange={(e) => setCompanyInput(e.target.value)} placeholder="Add a company (e.g. Databricks)"
                 className="input" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomCompany())} />

@@ -65,9 +65,17 @@ Automate at noon daily: edit paths in `ops/com.madhankumar.jobradar.plist`, then
 | `radar-pipeline` | 13:30 & 22:00 | ~8:30 AM & ~5 PM |
 | `daily-digest` | 23:00 | 6 PM (CDT) / 5 PM (CST) |
 
+## Phase 2 features (live)
+
+- **Match scores** — every fetched job is scored 0–100 against your resume (TF-IDF cosine + keyword hits + freshness). "Suggested" is the default radar sort; scores refresh each pipeline run.
+- **Pay & YoE** — extracted from descriptions by regex; if `ANTHROPIC_API_KEY` is set as a GitHub Actions secret, ambiguous postings get one cheap Haiku pass (capped at 40/run).
+- **H-1B sponsorship signal** — the job drawer shows an employer's USCIS approvals over the last 3 fiscal years. Import data once:
+  1. Download fiscal-year CSVs from the [USCIS H-1B Employer Data Hub](https://www.uscis.gov/tools/reports-and-studies/h-1b-employer-data-hub)
+  2. `cd pipeline && DATABASE_URL=<neon-url> python h1b_import.py ~/Downloads/h1b_fy2025.csv ~/Downloads/h1b_fy2024.csv`
+- **Resume-aware onboarding** — "Suggest from my resume" fills keywords + companies via Haiku (needs `ANTHROPIC_API_KEY` on Vercel).
+
 ## Roadmap
 
-- **Phase 2 — enrichment**: pay & YoE extraction, H-1B sponsorship signals (USCIS Employer Data Hub + DOL LCA), embedding-based match scores as the default sort.
 - **Phase 3 — Resume Studio**: per-job persistent AI chats that tailor your base resume (Opus 4.8 by default, BYOK or shared key), gap analysis, tailored .docx export.
 
 ## Dev

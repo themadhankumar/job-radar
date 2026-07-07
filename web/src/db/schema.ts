@@ -1,5 +1,6 @@
 import {
   boolean,
+  real,
   integer,
   pgTable,
   primaryKey,
@@ -73,6 +74,11 @@ export const jobs = pgTable(
     description: text("description").default("").notNull(),
     postedAt: timestamp("posted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    payMin: integer("pay_min"),
+    payMax: integer("pay_max"),
+    payPeriod: text("pay_period"),
+    yoeMin: integer("yoe_min"),
+    enriched: boolean("enriched").default(false).notNull(),
   },
   (t) => ({ uniq: uniqueIndex("jobs_source_company_ext").on(t.source, t.companyName, t.extId) }),
 );
@@ -95,4 +101,24 @@ export const digestLog = pgTable("digest_log", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
   jobCount: integer("job_count").default(0).notNull(),
+});
+
+export const userJobScores = pgTable(
+  "user_job_scores",
+  {
+    userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    jobId: integer("job_id").references(() => jobs.id, { onDelete: "cascade" }).notNull(),
+    score: real("score").notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.userId, t.jobId] }) }),
+);
+
+export const sponsors = pgTable("sponsors", {
+  id: serial("id").primaryKey(),
+  employer: text("employer").notNull(),
+  norm: text("norm").notNull(),
+  fiscalYear: integer("fiscal_year").notNull(),
+  approvals: integer("approvals").default(0).notNull(),
+  denials: integer("denials").default(0).notNull(),
 });
