@@ -1,147 +1,81 @@
-# Job Radar 📡
+# Job Radar
 
-A local-first job-posting monitor. Polls ATS public APIs (Greenhouse, Lever,
-Ashby, Workday) plus LinkedIn guest search, filters by configurable keywords /
-location / recency, dedupes against a local SQLite state, prints a clean
-terminal table, and pushes new matches into a Notion database.
+A self-hosted job-search command center. A Python pipeline sweeps company job boards on a schedule (Greenhouse, Lever, Ashby, Workday, plus LinkedIn's guest feed), stores everything in Postgres, and a Next.js dashboard turns it into a personal radar: tracked-company matches, a global feed, statuses, filters, a daily 6 PM email digest, and optional per-user Notion sync. Multi-user — friends can sign up, onboard with their own resume/keywords/companies, and get their own radar.
 
-Built for an AI Data PM / Data Engine PM / TPM (AI-ML) job search with a
-hard offer deadline — every run surfaces **only jobs you haven't seen before**.
+## Architecture
 
 ```
-config.yaml ──► fetchers (greenhouse / lever / ashby / workday / linkedin)
-                    │
-                    ▼
-              filters.py (include/exclude keywords, location, recency)
-                    │
-                    ▼
-              state.py (SQLite dedupe — new jobs only)
-                    │
-            ┌───────┴────────┐
-            ▼                ▼
-     terminal table    Notion database
+GitHub Actions (2x daily)          Your Mac (launchd, optional)
+  pipeline/main.py --no-linkedin     pipeline/main.py  (adds LinkedIn)
+        │                                   │
+        └────────────┬──────────────────────┘
+                     ▼
+              Neon Postgres  ◄────────  web/ (Next.js on Vercel)
+                     │                    auth · onboarding · radar UI
+                     ▼                    companies · settings (BYOK)
+  GitHub Actions (6 PM Central)
+  pipeline/digest.py ──► Resend ──► daily email digest
+                     │
+                     └──► per-user Notion push (optional)
 ```
 
-## Quick start
+- **`pipeline/`** — Python fetchers + Postgres writer. ATS boards run on GitHub Actions; LinkedIn runs locally (datacenter IPs get blocked).
+- **`web/`** — Next.js 14 dashboard. Email+password auth (JWT cookie), 4-step onboarding, tracked/global tabs, status tracking, encrypted BYOK Anthropic keys and Notion tokens (AES-256-GCM).
+- **Matching** — jobs from your watched companies match your include-keywords against title *or* description; the global LinkedIn feed matches title only; exclude-keywords always win.
+
+## Deploy (once, ~20 minutes)
+
+1. **Neon** — create a free project at neon.tech, copy the pooled connection string.
+2. **Migrate** — locally: `cd web && npm install && DATABASE_URL=<neon-url> npm run db:migrate` (seeds the 14 verified companies).
+3. **Vercel** — import the repo, set **Root Directory to `web/`**, add env vars:
+   - `DATABASE_URL` — the Neon string
+   - `AUTH_SECRET` — `openssl rand -hex 32`
+   - `ENCRYPTION_KEY` — `openssl rand -hex 32` (32-byte hex; encrypts stored API keys)
+   - `ANTHROPIC_API_KEY` — shared fallback key for resume chats (Phase 3)
+4. **GitHub Actions secrets** (repo → Settings → Secrets → Actions):
+   - `DATABASE_URL`, `ENCRYPTION_KEY` — same values as above
+   - `RESEND_API_KEY` — free account at resend.com
+   - `DIGEST_FROM` — e.g. `Job Radar <onboarding@resend.dev>` (sandbox) or a verified domain sender
+   - `APP_URL` — your Vercel URL, e.g. `https://job-radar.vercel.app`
+5. **Sign up** in the deployed app and run onboarding. Trigger the `radar-pipeline` workflow manually once to backfill.
+
+> Resend sandbox note: `onboarding@resend.dev` can only email the address that owns the Resend account. Verify a domain (free) to deliver digests to other users.
+
+## Local LinkedIn runner (optional but recommended)
 
 ```bash
-git clone https://github.com/themadhankumar/job-radar.git
-cd job-radar
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# 1. Verify which ATS each target company actually uses
-python discover.py
-#    → paste the printed YAML into config.yaml under `companies:`
-
-# 2. Dry run (no state written, no Notion)
-python main.py --dry-run --no-notion
-
-# 3. Real run
-python main.py
+cd pipeline && python -m venv .venv && .venv/bin/pip install -r requirements.txt
+cp ../web/.env.example .env   # set DATABASE_URL + ENCRYPTION_KEY (same as prod)
+.venv/bin/python main.py      # full run including LinkedIn
 ```
+Automate at noon daily: edit paths in `ops/com.madhankumar.jobradar.plist`, then
+`cp ops/com.madhankumar.jobradar.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.madhankumar.jobradar.plist`
 
-## Configuration (`config.yaml`)
+## Notion sync (optional, per user)
 
-| Section | What it controls |
-|---|---|
-| `filters.include_keywords` | Job matches if ANY appears in title/description |
-| `filters.exclude_keywords` | Job dropped if ANY appears |
-| `filters.require_title_match` | Flip to `true` if descriptions cause noise |
-| `filters.locations_allow` | Substring match; empty list = all locations |
-| `filters.posted_within_days` | Recency cutoff (when the ATS reports a date) |
-| `companies` | ATS boards to poll (`ats: greenhouse\|lever\|ashby\|workday`) |
-| `linkedin.searches` | Supplementary guest-search queries |
+1. Create an integration at notion.so/my-integrations, copy the secret.
+2. Create a database with properties: `Title` (title), `Company` (select), `Status` (select), `Source` (select), `URL` (url), `Location` (text), `Posted date` (date).
+3. On the database page: ••• → Connections → add your integration.
+4. Paste the secret + database ID into **Settings** in the dashboard. New matches push automatically each pipeline run.
 
-### Finding a Workday tenant
+## Schedules (UTC crons)
 
-Open the company's careers site and look at a job URL:
+| Workflow | Cron | Central time |
+|---|---|---|
+| `radar-pipeline` | 13:30 & 22:00 | ~8:30 AM & ~5 PM |
+| `daily-digest` | 23:00 | 6 PM (CDT) / 5 PM (CST) |
 
-```
-https://uhg.wd1.myworkdayjobs.com/en-US/External_Career_Site/job/...
-        ▲    ▲                        ▲
-     tenant host                    site
-```
+## Roadmap
 
-Put those three values in `config.yaml`. `discover.py` also probes common
-candidates for the healthcare tenants automatically.
+- **Phase 2 — enrichment**: pay & YoE extraction, H-1B sponsorship signals (USCIS Employer Data Hub + DOL LCA), embedding-based match scores as the default sort.
+- **Phase 3 — Resume Studio**: per-job persistent AI chats that tailor your base resume (Opus 4.8 by default, BYOK or shared key), gap analysis, tailored .docx export.
 
-Companies with **no public board** (Epic, Mayo Clinic, UMN, Stanford Health
-Care, Cleveland Clinic, Microsoft, Oracle Health use custom portals) are
-covered by the LinkedIn searches — tune those queries in `config.yaml`.
-
-## Notion setup (~3 minutes)
-
-1. Go to <https://www.notion.so/my-integrations> → **New integration** →
-   name it `Job Radar`, workspace = yours, capabilities: *Insert content* +
-   *Read content*. Copy the **Internal Integration Secret**.
-2. `cp .env.example .env` and paste the token as `NOTION_TOKEN`.
-3. Open (or create) the Notion page that will hold the tracker and
-   **connect the integration to it first**: `••• → Connections → Job Radar`.
-   (The API can't create or write to anything it hasn't been connected to —
-   skipping this causes 404s.)
-4. Create the database — two options:
-   - **Automatic**: on that page, click `••• → Copy link`, grab the 32-char
-     ID at the end of the URL, then:
-     ```bash
-     python notion_sync.py --create-db <PAGE_ID>
-     ```
-     It prints the `NOTION_DATABASE_ID` — add it to `.env`.
-   - **Manual**: create a database with properties **Title** (title),
-     **Company** (select), **URL** (url), **Location** (text),
-     **Posted date** (date), **Keywords matched** (multi-select),
-     **Source** (select), **Status** (select: New / Reviewing / Applied /
-     Interviewing / Offer / Rejected / Skipped). Copy its ID from the URL
-     and connect the integration to it.
-
-## Scheduling
-
-### Option A — macOS launchd (runs LinkedIn too)
+## Dev
 
 ```bash
-cp ops/com.madhankumar.jobradar.plist ~/Library/LaunchAgents/
-# Edit the plist if your repo path isn't ~/job-radar
-launchctl load ~/Library/LaunchAgents/com.madhankumar.jobradar.plist
-# Test immediately:
-launchctl start com.madhankumar.jobradar
-tail -f state/run.log
+# web
+cd web && npm install && npm run dev            # needs DATABASE_URL, AUTH_SECRET, ENCRYPTION_KEY
+# pipeline
+cd pipeline && python main.py --no-linkedin --no-notion
+python digest.py                                 # needs RESEND_API_KEY to actually send
 ```
-
-Unload with `launchctl unload ~/Library/LaunchAgents/com.madhankumar.jobradar.plist`.
-(launchd beats cron on modern macOS — cron jobs silently skip when the lid
-is closed and need Full Disk Access grants.)
-
-### Option B — GitHub Actions (free, daily, no laptop needed)
-
-Already wired in `.github/workflows/daily.yml` (14:30 UTC daily + manual
-trigger). To activate:
-
-1. Repo → **Settings → Secrets and variables → Actions** → add
-   `NOTION_TOKEN` and `NOTION_DATABASE_ID`.
-2. Repo → **Settings → Actions → General → Workflow permissions** →
-   *Read and write permissions* (so the run can commit `state/seen_jobs.db`).
-3. Actions tab → run **job-radar-daily** manually once to verify.
-
-Notes:
-- Actions runs skip LinkedIn (`--no-linkedin`) — datacenter IPs get blocked
-  fast. Run LinkedIn locally.
-- The state DB is committed back to the repo after each run. **If you use
-  both schedulers, `git pull` before local runs** to avoid duplicate
-  notifications / conflicts. Simplest: pick one scheduler.
-
-## CLI reference
-
-```
-python main.py [--config config.yaml] [--no-linkedin] [--no-notion] [--dry-run]
-python discover.py ["Company Name" ...] [--slug exact-slug]
-python notion_sync.py --create-db <PARENT_PAGE_ID>
-```
-
-## Etiquette & reliability
-
-- All fetchers use modest pacing (0.5s between Workday pages, 3–6s random
-  sleep between LinkedIn pages) and a browser User-Agent.
-- One failing board never kills the run — errors are printed and skipped.
-- Greenhouse/Lever return full descriptions (deep keyword matching);
-  Ashby's public API returns titles/locations only, so matching there is
-  title-driven.

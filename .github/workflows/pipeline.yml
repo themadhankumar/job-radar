@@ -1,0 +1,28 @@
+name: radar-pipeline
+
+on:
+  schedule:
+    - cron: "30 13 * * *"   # ~8:30 AM Central — morning fetch
+    - cron: "0 22 * * *"    # ~5 PM Central — pre-digest fetch
+  workflow_dispatch: {}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+      - run: pip install -r pipeline/requirements.txt
+      - name: Run pipeline
+        working-directory: pipeline
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        # LinkedIn is skipped on Actions (datacenter IPs get blocked).
+        # Run it locally via launchd — see ops/ and the README.
+        run: python main.py --no-linkedin
