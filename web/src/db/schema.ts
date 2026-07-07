@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   real,
   integer,
@@ -29,6 +30,8 @@ export const resumes = pgTable("resumes", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
   filename: text("filename").notNull(),
   content: text("content").notNull(),
+  fileB64: text("file_b64"),
+  fileKind: text("file_kind", { enum: ["docx", "pdf", "tex", "txt"] }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -122,3 +125,35 @@ export const sponsors = pgTable("sponsors", {
   approvals: integer("approvals").default(0).notNull(),
   denials: integer("denials").default(0).notNull(),
 });
+
+export const resumeThreads = pgTable(
+  "resume_threads",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    jobId: integer("job_id").references(() => jobs.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex("resume_threads_user_job").on(t.userId, t.jobId) }),
+);
+
+export const resumeMessages = pgTable("resume_messages", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").references(() => resumeThreads.id, { onDelete: "cascade" }).notNull(),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  content: text("content").notNull(),
+  tokensIn: integer("tokens_in").default(0).notNull(),
+  tokensOut: integer("tokens_out").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const userUsage = pgTable(
+  "user_usage",
+  {
+    userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    month: text("month").notNull(),
+    tokensIn: bigint("tokens_in", { mode: "number" }).default(0).notNull(),
+    tokensOut: bigint("tokens_out", { mode: "number" }).default(0).notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.userId, t.month] }) }),
+);
