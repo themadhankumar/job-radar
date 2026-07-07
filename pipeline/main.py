@@ -17,6 +17,12 @@ try:
 except ImportError:
     pass
 
+if not os.environ.get("DATABASE_URL"):
+    sys.exit(
+        "DATABASE_URL is not set. On GitHub Actions, add it (and ENCRYPTION_KEY) under "
+        "Settings → Secrets and variables → Actions."
+    )
+
 import db as dbm
 from crypto_util import decrypt
 from fetchers import ashby, greenhouse, lever, linkedin_guest, workday
