@@ -13,7 +13,7 @@ import {
 } from "@/lib/studio";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const sse = (data: object) => `data: ${JSON.stringify(data)}\n\n`;
 
@@ -71,13 +71,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: object) => controller.enqueue(encoder.encode(sse(data)));
+      let acc = "";
       try {
         const result = await streamAnthropic({
           apiKey: key,
           system,
           messages,
           maxTokens: 2000,
-          onDelta: (chunk) => send({ type: "delta", text: chunk }),
+          onDelta: (chunk) => {
+            acc += chunk;
+            send({ type: "delta", text: chunk });
+          },
         });
         // Persist the user turn (hidden label for bootstrap) and the reply, then usage.
         await db.insert(schema.resumeMessages).values([
@@ -87,9 +91,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         await recordUsage(user.id, result.tokensIn, result.tokensOut);
         send({ type: "done", tokensIn: result.tokensIn, tokensOut: result.tokensOut });
       } catch (err) {
+        // Keep whatever streamed so the thread doesn't lose context on reopen.
+        if (acc.length > 0) {
+          const estOut = Math.ceil(acc.length / 4);
+          await db
+            .insert(schema.resumeMessages)
+            .values([
+              { threadId, role: "user", content: bootstrap ? "__gap_analysis__" : userTurn, tokensIn: 0, tokensOut: 0 },
+              { threadId, role: "assistant", content: acc + "\n\n_[reply was cut off — ask me to continue]_", tokensIn: 0, tokensOut: estOut },
+            ])
+            .catch(() => {});
+          await recordUsage(user.id, 0, estOut).catch(() => {});
+        }
         send({ type: "error", message: byok
-          ? "Your API key was rejected or the request failed — check it in Settings."
-          : "The model request failed — try again in a moment." });
+          ? "The reply was interrupted — your key may have been rejected, or the request failed. What streamed so far is saved."
+          : "The reply was interrupted — what streamed so far is saved. Ask me to continue." });
         console.error("studio stream:", err);
       } finally {
         controller.close();
