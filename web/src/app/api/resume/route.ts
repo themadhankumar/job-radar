@@ -14,9 +14,8 @@ async function extractText(file: File): Promise<string> {
   }
   if (name.endsWith(".txt") || name.endsWith(".md")) return buf.toString("utf8");
   if (name.endsWith(".pdf")) {
-    const { PDFParse } = await import("pdf-parse");
-    const parser = new PDFParse({ data: new Uint8Array(buf) });
-    const { text } = await parser.getText();
+    const { extractText } = await import("unpdf");
+    const { text } = await extractText(new Uint8Array(buf), { mergePages: true });
     return text;
   }
   throw new Error("unsupported");
