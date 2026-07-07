@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { NewDot } from "./logo";
+import { Studio } from "./studio";
 
 export type JobRow = {
   id: number;
@@ -52,6 +53,7 @@ function isFresh(createdAt: string): boolean {
 
 export function JobsTable({ jobs }: { jobs: JobRow[] }) {
   const [openId, setOpenId] = useState<number | null>(null);
+  const [tab, setTab] = useState<"details" | "studio">("details");
   const [statuses, setStatuses] = useState<Record<number, string>>({});
   const open = jobs.find((j) => j.id === openId) ?? null;
 
@@ -79,7 +81,7 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
             {jobs.map((j) => {
               const st = statuses[j.id] ?? j.status;
               return (
-                <tr key={j.id} onClick={() => setOpenId(j.id)}
+                <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); }}
                   className="cursor-pointer border-b border-[rgb(var(--border))] last:border-0 hover:bg-[rgb(var(--border))]/30">
                   <td className="px-4 py-3"><ScoreBadge score={j.score} /></td>
                   <td className="max-w-md px-4 py-3 font-medium">
@@ -109,7 +111,7 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
         <div className="fixed inset-0 z-30" onClick={() => setOpenId(null)}>
           <div className="absolute inset-0 bg-black/30" />
           <aside onClick={(e) => e.stopPropagation()}
-            className="surface absolute inset-y-0 right-0 w-full max-w-lg overflow-y-auto border-y-0 border-r-0 p-6 shadow-xl">
+            className="surface absolute inset-y-0 right-0 flex w-full max-w-lg flex-col border-y-0 border-r-0 p-6 shadow-xl">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold leading-snug">{open.title}</h2>
@@ -117,6 +119,21 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
               </div>
               <button aria-label="Close" onClick={() => setOpenId(null)} className="btn-ghost h-8 w-8 shrink-0 p-0"><X size={15} /></button>
             </div>
+            <div className="mb-4 flex gap-1 border-b border-[rgb(var(--border))]">
+              {(["details", "studio"] as const).map((t) => (
+                <button key={t} onClick={() => setTab(t)}
+                  className={`px-3 py-1.5 text-sm capitalize ${tab === t
+                    ? "border-b-2 border-[rgb(var(--accent))] font-medium"
+                    : "t-muted hover:text-inherit"}`}>
+                  {t === "studio" ? "✦ Studio" : "Details"}
+                </button>
+              ))}
+            </div>
+
+            {tab === "studio" ? (
+              <div className="min-h-0 flex-1"><Studio jobId={open.id} /></div>
+            ) : (
+            <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="mb-4 flex flex-wrap gap-2 text-xs">
               {open.score != null && <span className="chip t-accent border-[rgb(var(--accent))]">match {open.score}</span>}
               {pay(open) && <span className="chip">{pay(open)}</span>}
@@ -141,7 +158,9 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
                 {open.description ? open.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 1200) : "This source doesn't include a description — open the posting for details."}
               </p>
             </div>
-            <p className="t-muted mt-4 text-xs">Resume tailoring chats land here in Phase 3.</p>
+            <p className="t-muted mt-4 text-xs">Open the ✦ Studio tab to tailor your resume to this job.</p>
+            </div>
+            )}
           </aside>
         </div>
       )}
