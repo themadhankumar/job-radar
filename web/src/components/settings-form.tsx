@@ -72,7 +72,7 @@ export function SettingsForm(props: {
         </p>
         <label className="btn-ghost inline-flex cursor-pointer">
           {uploading ? "Uploading…" : "Upload resume"}
-          <input type="file" accept=".pdf,.docx,.tex,.txt,.md" className="hidden" disabled={uploading}
+          <input type="file" className="hidden" disabled={uploading}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadResume(f); e.target.value = ""; }} />
         </label>
       </section>
