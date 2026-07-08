@@ -17,7 +17,7 @@ export function RadarFilters({ tab, q, days, status, sort }: { tab: string; q: s
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
       <div className="surface flex rounded-md p-0.5">
-        {(["tracked", "global"] as const).map((t) => (
+        {(["tracked", "suggested", "global"] as const).map((t) => (
           <button key={t} onClick={() => setParam("tab", t === "tracked" ? "" : t)}
             className={`rounded px-3 py-1.5 text-sm font-medium capitalize ${tab === t ? "bg-[rgb(var(--accent))] text-white dark:text-zinc-900" : "t-muted"}`}>
             {t}

@@ -10,7 +10,7 @@ type Search = { tab?: string; q?: string; days?: string; status?: string; sort?:
 
 export default async function RadarPage({ searchParams }: { searchParams: Search }) {
   const user = (await getSessionUser())!;
-  const tab = searchParams.tab === "global" ? "global" : "tracked";
+  const tab = ["global", "suggested"].includes(searchParams.tab ?? "") ? (searchParams.tab as "global" | "suggested") : "tracked";
   const q = (searchParams.q ?? "").trim();
   const days = Math.min(Math.max(parseInt(searchParams.days ?? "0") || 0, 0), 90);
   const statusFilter = searchParams.status ?? "";
@@ -52,6 +52,16 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   if (include.length > 0 && tab === "global") {
     conds.push(or(...include.map((k) => sql`${schema.jobs.title} ILIKE ${"%" + k + "%"}`))!);
   }
+  if (tab === "suggested") {
+    conds.push(sql`sc.score >= 70`);
+    conds.push(sql`NOT EXISTS (SELECT 1 FROM user_dismissed_jobs d WHERE d.user_id = ${user.id} AND d.job_id = ${schema.jobs.id})`);
+    if (myCompanies.length > 0) {
+      const ids = myCompanies.map((c) => c.id);
+      const names = myCompanies.map((c) => c.name.toLowerCase());
+      conds.push(sql`(${schema.jobs.companyId} IS NULL OR ${schema.jobs.companyId} NOT IN ${ids})`);
+      conds.push(sql`lower(${schema.jobs.companyName}) NOT IN ${names}`);
+    }
+  }
   for (const k of exclude) {
     conds.push(sql`${schema.jobs.title} NOT ILIKE ${"%" + k + "%"}`);
   }
@@ -81,6 +91,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       description: sql<string>`left(${schema.jobs.description}, 1500)`,
       status: sql<string | null>`ujs.status`,
       score: sql<number | null>`sc.score`,
+      components: sql<import("@/db/schema").MatchComponents | null>`sc.components`,
       payMin: schema.jobs.payMin,
       payMax: schema.jobs.payMax,
       payPeriod: schema.jobs.payPeriod,
@@ -118,9 +129,9 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   return (
     <Shell tab={tab} q={q} days={days} status={statusFilter} sort={sort}>
       {jobs.length === 0 ? (
-        <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : "Nothing in the global feed matches your filters yet."} />
+        <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : tab === "suggested" ? "Nothing above the 70% match bar yet — scores refresh with each pipeline sweep, and a richer profile on the Resume tab sharpens them." : "Nothing in the global feed matches your filters yet."} />
       ) : (
-        <JobsTable jobs={jobs} />
+        <JobsTable jobs={jobs} tab={tab} />
       )}
     </Shell>
   );
