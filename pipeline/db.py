@@ -23,6 +23,33 @@ def watched_companies(conn) -> list[dict]:
     ).fetchall()
 
 
+def upsert_seed_companies(conn, seeds: list[dict]) -> list[dict]:
+    """Ensure the global seed companies exist in `companies`, return them with ids.
+
+    Idempotent on the unique company name. Seed companies are intentionally left
+    out of user_companies, so they surface as non-tracked (Global / Suggested)
+    until a user chooses to track them.
+    """
+    out: list[dict] = []
+    with conn.cursor() as cur:
+        for s in seeds:
+            cur.execute(
+                """INSERT INTO companies (name, ats, slug, tenant, host, site)
+                   VALUES (%(name)s, %(ats)s, %(slug)s, %(tenant)s, %(host)s, %(site)s)
+                   ON CONFLICT (name) DO UPDATE SET
+                     ats = EXCLUDED.ats, slug = EXCLUDED.slug,
+                     tenant = EXCLUDED.tenant, host = EXCLUDED.host, site = EXCLUDED.site
+                   RETURNING id, name, ats, slug, tenant, host, site""",
+                {
+                    "name": s["name"], "ats": s["ats"], "slug": s.get("slug"),
+                    "tenant": s.get("tenant"), "host": s.get("host"), "site": s.get("site"),
+                },
+            )
+            out.append(cur.fetchone())
+    conn.commit()
+    return out
+
+
 def all_include_keywords(conn) -> list[str]:
     rows = conn.execute(
         "SELECT DISTINCT keyword FROM user_keywords WHERE kind = 'include' ORDER BY keyword"
