@@ -61,7 +61,16 @@ def main() -> int:
     run_started = dbm.utcnow()
     session = make_session()
     keywords = dbm.all_include_keywords(conn)
+
+    # Watched companies (per-user watchlists) + the global seed universe, which
+    # is swept every run so Global/Suggested have jobs beyond anyone's watchlist.
+    from seed_companies import SEED_COMPANIES
     companies = dbm.watched_companies(conn)
+    seeded = dbm.upsert_seed_companies(conn, SEED_COMPANIES)
+    by_id = {c["id"]: c for c in companies}
+    for c in seeded:
+        by_id.setdefault(c["id"], c)
+    companies = list(by_id.values())
     total_new = 0
 
     # ---- ATS boards ----
