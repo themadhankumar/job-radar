@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { getSessionUserId } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
+import { getProfile, parseResumeProfile, upsertProfile } from "@/lib/profile";
+import { resolveKey } from "@/lib/studio";
 
 export const runtime = "nodejs";
 
@@ -44,8 +47,9 @@ async function extractText(file: File, kind: Kind, buf: Buffer): Promise<string>
 }
 
 export async function POST(req: Request) {
-  const uid = await getSessionUserId();
-  if (!uid) return NextResponse.json({ error: "Sign in to continue" }, { status: 401 });
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Sign in to continue" }, { status: 401 });
+  const uid = user.id;
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File) || file.size === 0 || file.size > 5_000_000) {
@@ -68,7 +72,26 @@ export async function POST(req: Request) {
         target: schema.resumes.userId,
         set: { filename: file.name, content, fileB64, fileKind: kind, updatedAt: new Date() },
       });
-    return NextResponse.json({ ok: true, chars: content.length, kind });
+    // Parse a structured profile from the new resume. Hand-edited profiles are
+    // preserved — the Resume page offers an explicit re-parse instead.
+    let profileUpdated = false;
+    let profileStale = false;
+    try {
+      const existing = await getProfile(uid);
+      if (existing?.edited) {
+        profileStale = true;
+      } else {
+        const { key } = resolveKey(user);
+        if (key) {
+          const profile = await parseResumeProfile(key, content);
+          await upsertProfile(uid, profile, false);
+          profileUpdated = true;
+        }
+      }
+    } catch (err) {
+      console.error("profile parse on upload:", err);
+    }
+    return NextResponse.json({ ok: true, chars: content.length, kind, profileUpdated, profileStale });
   } catch {
     return NextResponse.json({ error: "Use a .pdf, .docx, .tex, .txt, or .md file." }, { status: 415 });
   }

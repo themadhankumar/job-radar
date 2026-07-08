@@ -33,7 +33,8 @@ export default function CompaniesPage() {
     const data = await res.json();
     setBusy(false);
     if (!res.ok) { setMsg(data.error ?? "Could not add that company."); return; }
-    if (!companyId) setMsg(data.ats === "linkedin" ? `${name}: no public job board found — covered via the LinkedIn feed.` : `${name}: ${data.ats} board detected ✓`);
+    if (!companyId) setMsg(data.ats === "linkedin" ? `${name}: no public job board found — covered via the LinkedIn feed.` : `${name}: ${data.ats} board detected ✓${data.jobsFetched ? ` — ${data.jobsFetched} postings pulled into your radar now` : ""}`);
+    else setMsg(data.jobsFetched ? `${name}: ${data.jobsFetched} new postings pulled into your radar now.` : `${name} added — postings appear after the next sweep (already-known ones are there now).`);
     setInput("");
     load();
   }
