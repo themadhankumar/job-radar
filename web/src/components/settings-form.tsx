@@ -4,6 +4,7 @@ import { useState } from "react";
 export function SettingsForm(props: {
   digestEnabled: boolean;
   needsSponsorship: boolean;
+  usOnly: boolean;
   hasKey: boolean;
   hasNotion: boolean;
   notionDatabaseId: string;
@@ -11,6 +12,7 @@ export function SettingsForm(props: {
 }) {
   const [digest, setDigest] = useState(props.digestEnabled);
   const [sponsor, setSponsor] = useState(props.needsSponsorship);
+  const [usOnly, setUsOnly] = useState(props.usOnly);
   const [apiKey, setApiKey] = useState("");
   const [notionToken, setNotionToken] = useState("");
   const [notionDb, setNotionDb] = useState(props.notionDatabaseId);
@@ -39,6 +41,11 @@ export function SettingsForm(props: {
           <span>I need visa sponsorship<span className="t-muted block text-xs">Shows employer sponsorship signals on job details.</span></span>
           <input type="checkbox" checked={sponsor} className="accent-[rgb(var(--accent))]"
             onChange={(e) => { setSponsor(e.target.checked); save({ needsSponsorship: e.target.checked }, "Sponsorship preference"); }} />
+        </label>
+        <label className="flex cursor-pointer items-center justify-between py-2 text-sm">
+          <span>US roles only<span className="t-muted block text-xs">Hides clearly international postings everywhere — radar tabs, Suggested, and the email digest. Ambiguous locations (plain "Remote") stay visible.</span></span>
+          <input type="checkbox" checked={usOnly} className="accent-[rgb(var(--accent))]"
+            onChange={(e) => { setUsOnly(e.target.checked); save({ usOnly: e.target.checked }, "US-only preference"); }} />
         </label>
       </section>
 

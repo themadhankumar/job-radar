@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   needsSponsorship: boolean("needs_sponsorship").default(false).notNull(),
   onboarded: boolean("onboarded").default(false).notNull(),
   digestEnabled: boolean("digest_enabled").default(true).notNull(),
+  usOnly: boolean("us_only").default(false).notNull(),
   anthropicKeyEnc: text("anthropic_key_enc"),
   notionTokenEnc: text("notion_token_enc"),
   notionDatabaseId: text("notion_database_id"),
@@ -75,6 +76,7 @@ export const jobs = pgTable(
     title: text("title").notNull(),
     url: text("url").notNull(),
     location: text("location").default("").notNull(),
+  country: text("country").default("").notNull(),
     description: text("description").default("").notNull(),
     postedAt: timestamp("posted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -192,4 +194,16 @@ export const userDismissedJobs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({ pk: primaryKey({ columns: [t.userId, t.jobId] }) }),
+);
+
+export const filterPresets = pgTable(
+  "filter_presets",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    name: text("name").notNull(),
+    params: jsonb("params").$type<Record<string, string>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex("filter_presets_user_name").on(t.userId, t.name) }),
 );
