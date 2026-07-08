@@ -8,10 +8,6 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = (await getSessionUser())!;
-  const [resume] = await db
-    .select({ filename: schema.resumes.filename, fileKind: schema.resumes.fileKind })
-    .from(schema.resumes)
-    .where(eq(schema.resumes.userId, user.id));
   const usage = await getUsage(user.id);
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-8">
@@ -23,8 +19,6 @@ export default async function SettingsPage() {
         hasKey={Boolean(user.anthropicKeyEnc)}
         hasNotion={Boolean(user.notionTokenEnc)}
         notionDatabaseId={user.notionDatabaseId ?? ""}
-        resumeFilename={resume?.filename ?? null}
-        resumeKind={resume?.fileKind ?? null}
         usage={usage}
       />
     </div>

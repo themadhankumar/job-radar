@@ -1,6 +1,7 @@
 import {
   bigint,
   boolean,
+  jsonb,
   real,
   integer,
   pgTable,
@@ -157,3 +158,19 @@ export const userUsage = pgTable(
   },
   (t) => ({ pk: primaryKey({ columns: [t.userId, t.month] }) }),
 );
+
+export type ProfileData = {
+  skills: string[];
+  titles: string[];
+  industries: string[];
+  seniority: string;
+  yoe: number | null;
+  summary: string;
+};
+
+export const userProfiles = pgTable("user_profiles", {
+  userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  data: jsonb("data").$type<ProfileData>().notNull(),
+  edited: boolean("edited").default(false).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
