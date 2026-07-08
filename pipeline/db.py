@@ -57,7 +57,7 @@ def users_for_notion(conn) -> list[dict]:
 
 def users_for_digest(conn) -> list[dict]:
     return conn.execute(
-        "SELECT id, name, email FROM users WHERE digest_enabled AND onboarded"
+        "SELECT id, name, email, us_only FROM users WHERE digest_enabled AND onboarded"
     ).fetchall()
 
 
@@ -76,7 +76,9 @@ def user_matched_jobs_since(conn, user_id: int, since: datetime) -> list[dict]:
           SELECT c.id, lower(c.name) AS lname FROM user_companies uc
           JOIN companies c ON c.id = uc.company_id WHERE uc.user_id = %(uid)s
         )
-        SELECT j.* FROM jobs j
+        SELECT j.*, (SELECT s.score FROM user_job_scores s
+                       WHERE s.user_id = %(uid)s AND s.job_id = j.id) AS score
+        FROM jobs j
         WHERE j.created_at > %(since)s
           AND (
             (

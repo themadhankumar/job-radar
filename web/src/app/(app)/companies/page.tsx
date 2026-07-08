@@ -11,6 +11,18 @@ export default function CompaniesPage() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [suggestions, setSuggestions] = useState<{ name: string; reason: string }[]>([]);
+  const [suggesting, setSuggesting] = useState(false);
+
+  async function suggest() {
+    setSuggesting(true);
+    setMsg("");
+    const res = await fetch("/api/companies/suggest", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    setSuggesting(false);
+    if (!res.ok) { setMsg(data.error ?? "Suggestions failed — try again."); return; }
+    setSuggestions(data.suggestions ?? []);
+  }
 
   async function load() {
     const d = await fetch("/api/companies").then((r) => r.json());
@@ -61,6 +73,34 @@ export default function CompaniesPage() {
         </button>
       </div>
       {msg && <p className="t-accent -mt-4 mb-4 text-sm">{msg}</p>}
+
+      <section className="surface mb-6 rounded-xl p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold">✦ Suggest companies</h2>
+            <p className="t-muted text-xs">Based on your resume profile and current watchlist.</p>
+          </div>
+          <button className="btn-ghost text-xs" disabled={suggesting} onClick={suggest}>
+            {suggesting ? "Thinking…" : suggestions.length ? "Refresh" : "Suggest"}
+          </button>
+        </div>
+        {suggestions.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {suggestions.map((sg) => (
+              <div key={sg.name} className="flex items-center justify-between gap-3 rounded-lg border border-[rgb(var(--border))] px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{sg.name}</p>
+                  <p className="t-muted truncate text-xs">{sg.reason}</p>
+                </div>
+                <button className="btn-ghost shrink-0 text-xs" disabled={busy}
+                  onClick={() => { add(sg.name); setSuggestions((x) => x.filter((y) => y.name !== sg.name)); }}>
+                  Add
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="surface mb-6 rounded-xl">
         <h2 className="t-muted border-b border-[rgb(var(--border))] px-4 py-2.5 text-xs font-medium uppercase tracking-wide">

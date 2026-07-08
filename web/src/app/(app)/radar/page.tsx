@@ -27,6 +27,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     .where(eq(schema.userCompanies.userId, user.id));
 
   const conds: SQL[] = [];
+  if (user.usOnly) conds.push(sql`${schema.jobs.country} <> 'intl'`);
   if (tab === "tracked") {
     if (myCompanies.length === 0) {
       return (
