@@ -98,10 +98,10 @@ def main() -> int:
 
     # ---- Enrichment + scoring ----
     from extract import enrich_new_jobs
-    from score import compute_scores
+    from match import compute_matches
     enriched = enrich_new_jobs(conn)
-    scored = compute_scores(conn)
-    console.print(f"[dim]enriched {enriched} jobs, refreshed {scored} match scores[/dim]")
+    scored = compute_matches(conn)
+    console.print(f"[dim]enriched {enriched} jobs, refreshed {scored} profile-match scores[/dim]")
 
     # ---- Per-user Notion push ----
     if not args.no_notion and total_new > 0:

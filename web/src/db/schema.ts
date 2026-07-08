@@ -174,3 +174,22 @@ export const userProfiles = pgTable("user_profiles", {
   edited: boolean("edited").default(false).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export type MatchComponents = {
+  skills: number;
+  role: number;
+  work: number;
+  exp: number;
+  industry: number;
+  missing: string[];
+};
+
+export const userDismissedJobs = pgTable(
+  "user_dismissed_jobs",
+  {
+    userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    jobId: integer("job_id").references(() => jobs.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.userId, t.jobId] }) }),
+);

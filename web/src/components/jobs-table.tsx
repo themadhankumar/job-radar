@@ -4,6 +4,7 @@ import { ExternalLink, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
 import { htmlToText } from "@/lib/text";
+import type { MatchComponents } from "@/db/schema";
 
 export type JobRow = {
   id: number;
@@ -22,6 +23,7 @@ export type JobRow = {
   payPeriod: string | null;
   yoeMin: number | null;
   sponsorApprovals: number | null;
+  components: MatchComponents | null;
 };
 
 function pay(j: JobRow): string | null {
@@ -33,8 +35,48 @@ function pay(j: JobRow): string | null {
 
 function ScoreBadge({ score }: { score: number | null }) {
   if (score == null) return <span className="t-muted text-xs">—</span>;
-  const tone = score >= 70 ? "text-[rgb(var(--accent))] border-[rgb(var(--accent))]" : score >= 40 ? "" : "opacity-60";
-  return <span className={`chip font-mono ${tone}`}>{score}</span>;
+  const tone =
+    score >= 70
+      ? "text-emerald-500 border-emerald-500/60"
+      : score >= 50
+        ? "text-amber-500 border-amber-500/60"
+        : "opacity-60";
+  return <span className={`chip font-mono ${tone}`}>{score}%</span>;
+}
+
+const COMPONENT_META: { key: keyof Omit<MatchComponents, "missing">; label: string; weight: number }[] = [
+  { key: "skills", label: "Skills", weight: 30 },
+  { key: "role", label: "Role", weight: 25 },
+  { key: "work", label: "Work similarity", weight: 20 },
+  { key: "exp", label: "Experience fit", weight: 15 },
+  { key: "industry", label: "Industry", weight: 10 },
+];
+
+function MatchBreakdown({ c }: { c: MatchComponents }) {
+  return (
+    <div className="mb-4 rounded-lg border border-[rgb(var(--border))] p-3">
+      <p className="t-muted mb-2 text-xs font-medium uppercase tracking-wide">Why this match</p>
+      <div className="space-y-1.5">
+        {COMPONENT_META.map(({ key, label, weight }) => (
+          <div key={key} className="flex items-center gap-2 text-xs">
+            <span className="w-28 shrink-0">{label}</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded bg-[rgb(var(--border))]">
+              <div className="h-full rounded bg-[rgb(var(--accent))]" style={{ width: `${Math.round((c[key] ?? 0) * 100)}%` }} />
+            </div>
+            <span className="t-muted w-16 shrink-0 text-right font-mono">{Math.round((c[key] ?? 0) * 100)}% · {weight}w</span>
+          </div>
+        ))}
+      </div>
+      {c.missing?.length > 0 && (
+        <div className="mt-3">
+          <p className="t-muted mb-1.5 text-xs">Terms in this posting your profile doesn't cover — add real ones to your resume or profile to raise the match:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {c.missing.map((m) => <span key={m} className="chip text-xs">+ {m}</span>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const STATUSES = ["new", "reviewing", "applied", "interviewing", "offer", "rejected", "skipped"];
@@ -52,7 +94,18 @@ function isFresh(createdAt: string): boolean {
   return Date.now() - new Date(createdAt).getTime() < 48 * 3_600_000;
 }
 
-export function JobsTable({ jobs }: { jobs: JobRow[] }) {
+export function JobsTable({ jobs, tab: radarTab = "tracked" }: { jobs: JobRow[]; tab?: string }) {
+  const [hidden, setHidden] = useState<Set<number>>(new Set());
+
+  async function dismiss(jobId: number) {
+    setHidden((h) => new Set(h).add(jobId));
+    await fetch("/api/jobs/dismiss", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId }),
+    });
+  }
+
   const [openId, setOpenId] = useState<number | null>(null);
   const [tab, setTab] = useState<"details" | "studio">("details");
   const [statuses, setStatuses] = useState<Record<number, string>>({});
@@ -79,7 +132,7 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
             </tr>
           </thead>
           <tbody>
-            {jobs.map((j) => {
+            {jobs.filter((j) => !hidden.has(j.id)).map((j) => {
               const st = statuses[j.id] ?? j.status;
               return (
                 <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); }}
@@ -101,6 +154,14 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
                       {STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
                     </select>
                   </td>
+                  {radarTab === "suggested" && (
+                    <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
+                      <button aria-label="Don't suggest this job again" title="Don't suggest again"
+                        onClick={() => dismiss(j.id)} className="t-muted hover:text-red-400">
+                        <X size={14} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -154,6 +215,7 @@ export function JobsTable({ jobs }: { jobs: JobRow[] }) {
               Open posting <ExternalLink size={14} />
             </a>
             <div className="surface rounded-lg p-4">
+              {open.components && <MatchBreakdown c={open.components} />}
               <p className="t-muted mb-2 text-xs font-medium uppercase tracking-wide">Description preview</p>
               <p className="whitespace-pre-line text-sm leading-relaxed">
                 {open.description ? htmlToText(open.description).slice(0, 1200) : "This source doesn't include a description — open the posting for details."}
