@@ -11,6 +11,7 @@ export async function POST(req: Request) {
   const set: Record<string, unknown> = {};
   if (typeof body.digestEnabled === "boolean") set.digestEnabled = body.digestEnabled;
   if (typeof body.needsSponsorship === "boolean") set.needsSponsorship = body.needsSponsorship;
+  if (typeof body.usOnly === "boolean") set.usOnly = body.usOnly;
   if (typeof body.anthropicKey === "string") {
     set.anthropicKeyEnc = body.anthropicKey.trim() ? encrypt(body.anthropicKey.trim()) : null;
   }

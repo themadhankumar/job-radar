@@ -15,6 +15,7 @@ export default async function SettingsPage() {
       <p className="t-muted mb-6 text-sm">Signed in as {user.email}</p>
       <SettingsForm
         digestEnabled={user.digestEnabled}
+        usOnly={user.usOnly}
         needsSponsorship={user.needsSponsorship}
         hasKey={Boolean(user.anthropicKeyEnc)}
         hasNotion={Boolean(user.notionTokenEnc)}

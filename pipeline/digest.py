@@ -30,10 +30,16 @@ def render_email(name: str, jobs: list[dict], app_url: str) -> str:
     rows = []
     for j in jobs[:25]:
         posted = j["posted_at"].strftime("%b %d") if j.get("posted_at") else ""
+        score = j.get("score")
+        badge = (
+            f'<span style="float:right;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;'
+            f'color:{"#059669" if score >= 70 else "#b45309" if score >= 50 else "#71717a"};'
+            f'border:1px solid currentColor;">{round(score)}%</span>'
+        ) if score is not None else ""
         rows.append(
             f"""<tr>
               <td style="padding:12px 16px;border-bottom:1px solid #e4e4e7;">
-                <a href="{html.escape(j['url'])}" style="color:#0f766e;font-weight:600;text-decoration:none;">{html.escape(j['title'])}</a>
+                {badge}<a href="{html.escape(j['url'])}" style="color:#0f766e;font-weight:600;text-decoration:none;">{html.escape(j['title'])}</a>
                 <div style="color:#71717a;font-size:13px;margin-top:2px;">
                   {html.escape(j['company_name'])}{' · ' + html.escape(j['location'][:60]) if j.get('location') else ''}{' · ' + posted if posted else ''}
                 </div>
@@ -64,6 +70,8 @@ def main() -> int:
     for user in dbm.users_for_digest(conn):
         since = dbm.last_digest_at(conn, user["id"]) or (dbm.utcnow() - timedelta(hours=24))
         jobs = dbm.user_matched_jobs_since(conn, user["id"], since)
+        if user.get("us_only"):
+            jobs = [j for j in jobs if j.get("country") != "intl"]
         if not jobs:
             console.print(f"[dim]{user['email']}: nothing new, no email[/dim]")
             continue
