@@ -1,20 +1,13 @@
-"""Import USCIS H-1B Employer Data Hub CSVs into the sponsors table.
+"""Import USCIS H-1B Employer Data Hub files into the sponsors table.
 
-Get the data (free, no login):
-  https://www.uscis.gov/tools/reports-and-studies/h-1b-employer-data-hub
-  → "Data Hub Files" → download the CSV for each fiscal year you want
-  (FY2024 + FY2025 is plenty for a current signal).
-
-Run:
-  python h1b_import.py path/to/h1b_fy2025.csv [more.csv ...]
-
-Idempotent — re-importing a year replaces that year's rows. Employer names are
-normalized identically to the norm_employer() SQL function so dashboard
-lookups by company name hit.
+Handles USCIS quirks (UTF-16, tab-separated, 7 approval + 7 denial columns)
+and uses COPY for bulk insert — the whole run finishes in seconds instead of
+tens of minutes with row-by-row INSERTs.
 """
 from __future__ import annotations
 
 import csv
+import io
 import re
 import sys
 
@@ -32,64 +25,103 @@ def norm(name: str) -> str:
     return NON_ALNUM.sub(" ", s).strip()
 
 
-def pick(row: dict, *candidates: str) -> str:
-    """USCIS renames columns across years; match loosely."""
-    lowered = {k.lower().strip().replace("_", " "): v for k, v in row.items()}
-    for c in candidates:
-        for k, v in lowered.items():
-            if c in k:
-                return v or ""
+def open_uscis(path: str):
+    with open(path, "rb") as f:
+        head = f.read(2)
+    if head in (b"\xff\xfe", b"\xfe\xff"):
+        return open(path, encoding="utf-16", newline="")
+    return open(path, encoding="utf-8-sig", errors="replace", newline="")
+
+
+def pick_employer(row: dict) -> str:
+    for k, v in row.items():
+        kl = (k or "").lower()
+        if "employer" in kl and "name" in kl:
+            return (v or "").strip()
+        if kl.strip() == "petitioner name":
+            return (v or "").strip()
     return ""
+
+
+def pick_fy(row: dict) -> int | None:
+    for k, v in row.items():
+        if "fiscal" in (k or "").lower() and "year" in (k or "").lower():
+            try:
+                return int(str(v).strip()[:4])
+            except (ValueError, TypeError):
+                return None
+    return None
+
+
+def _sum(row: dict, want: str) -> int:
+    total = 0
+    for k, v in row.items():
+        if want in (k or "").lower():
+            try:
+                total += int(float(str(v).replace(",", "").strip() or 0))
+            except (ValueError, TypeError):
+                continue
+    return total
+
+
+def _clean(s: str) -> str:
+    """Strip tabs/newlines so COPY sees exactly the fields we want."""
+    return (s or "").replace("\t", " ").replace("\n", " ").replace("\r", " ")
 
 
 def main(paths: list[str]) -> int:
     conn = dbm.connect()
     for path in paths:
-        rows = 0
+        rows_read = 0
         agg: dict[tuple[str, int], dict] = {}
-        with open(path, newline="", encoding="utf-8-sig", errors="replace") as f:
-            for row in csv.DictReader(f):
-                employer = pick(row, "employer (petitioner) name", "employer name", "petitioner name", "employer")
-                fy_raw = pick(row, "fiscal year")
-                if not employer or not fy_raw:
+        print(f"reading {path}...", flush=True)
+        with open_uscis(path) as f:
+            for row in csv.DictReader(f, delimiter="\t"):
+                rows_read += 1
+                employer = pick_employer(row)
+                fy = pick_fy(row)
+                if not employer or not fy:
                     continue
-                try:
-                    fy = int(str(fy_raw).strip()[:4])
-                except ValueError:
+                approvals = _sum(row, "approval")
+                denials = _sum(row, "denial")
+                if approvals == 0 and denials == 0:
                     continue
-                appr = sum(_int(pick(row, "initial approval", "new employment approval")) for _ in [0]) + _int(pick(row, "continuing approval", "continuation approval"))
-                den = _int(pick(row, "initial denial", "new employment denial")) + _int(pick(row, "continuing denial", "continuation denial"))
                 key = (norm(employer), fy)
                 if not key[0]:
                     continue
-                slot = agg.setdefault(key, {"employer": employer.strip()[:200], "approvals": 0, "denials": 0})
-                slot["approvals"] += appr
-                slot["denials"] += den
-                rows += 1
+                slot = agg.setdefault(key, {"employer": employer[:200], "approvals": 0, "denials": 0})
+                slot["approvals"] += approvals
+                slot["denials"] += denials
         years = sorted({fy for (_, fy) in agg})
-        for fy in years:
-            conn.execute("DELETE FROM sponsors WHERE fiscal_year = %s AND norm = ANY(%s)",
-                         (fy, [n for (n, y) in agg if y == fy]))
-        for (n, fy), v in agg.items():
-            conn.execute(
-                """INSERT INTO sponsors (employer, norm, fiscal_year, approvals, denials)
-                   VALUES (%s,%s,%s,%s,%s)
-                   ON CONFLICT (norm, fiscal_year) DO UPDATE
-                   SET approvals = sponsors.approvals + EXCLUDED.approvals,
-                       denials = sponsors.denials + EXCLUDED.denials""",
-                (v["employer"], n, fy, v["approvals"], v["denials"]),
-            )
+        print(f"  parsed {rows_read} rows -> {len(agg)} employer-year records (FY {years}). writing...", flush=True)
+
+        with conn.cursor() as cur:
+            # scratch table, load via COPY, then upsert into sponsors
+            cur.execute("""
+                CREATE TEMP TABLE _sponsors_stage (
+                    employer TEXT, norm TEXT, fiscal_year INTEGER,
+                    approvals INTEGER, denials INTEGER
+                ) ON COMMIT DROP
+            """)
+            buf = io.StringIO()
+            for (n, fy), v in agg.items():
+                buf.write(f"{_clean(v['employer'])}\t{_clean(n)}\t{fy}\t{v['approvals']}\t{v['denials']}\n")
+            buf.seek(0)
+            with cur.copy("COPY _sponsors_stage FROM STDIN") as copy:
+                copy.write(buf.getvalue())
+            for fy in years:
+                cur.execute("DELETE FROM sponsors WHERE fiscal_year = %s", (fy,))
+            cur.execute("""
+                INSERT INTO sponsors (employer, norm, fiscal_year, approvals, denials)
+                SELECT employer, norm, fiscal_year, approvals, denials FROM _sponsors_stage
+                ON CONFLICT (norm, fiscal_year) DO UPDATE
+                SET approvals = sponsors.approvals + EXCLUDED.approvals,
+                    denials = sponsors.denials + EXCLUDED.denials
+            """)
         conn.commit()
-        print(f"{path}: {rows} rows -> {len(agg)} employer-year records (FY {years})")
+        print(f"  ✓ {path} done", flush=True)
     conn.close()
     return 0
-
-
-def _int(v: str) -> int:
-    try:
-        return int(float(str(v).replace(",", "").strip() or 0))
-    except ValueError:
-        return 0
 
 
 if __name__ == "__main__":
