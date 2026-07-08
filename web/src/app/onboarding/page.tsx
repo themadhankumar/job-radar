@@ -117,7 +117,7 @@ export default function Onboarding() {
             <h1 className="text-xl font-semibold">Upload your resume</h1>
             <p className="t-muted mb-4 mt-1 text-sm">It becomes the baseline for match scores and per-job tailoring. PDF, DOCX, TXT, or MD.</p>
             <label className="surface flex cursor-pointer flex-col items-center rounded-lg border-dashed p-8 text-sm hover:border-[rgb(var(--accent))]">
-              <input type="file" accept=".pdf,.docx,.tex,.txt,.md" className="hidden"
+              <input type="file" className="hidden"
                 onChange={(e) => e.target.files?.[0] && uploadResume(e.target.files[0])} />
               {resumeName ? <span className="t-accent font-medium">✓ {resumeName}</span> : <span className="t-muted">{busy ? "Reading…" : "Click to choose a file"}</span>}
             </label>
