@@ -54,7 +54,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     conds.push(or(...include.map((k) => sql`${schema.jobs.title} ILIKE ${"%" + k + "%"}`))!);
   }
   if (tab === "suggested") {
-    conds.push(sql`sc.score >= 70`);
+    conds.push(sql`sc.score >= 20`);
     conds.push(sql`NOT EXISTS (SELECT 1 FROM user_dismissed_jobs d WHERE d.user_id = ${user.id} AND d.job_id = ${schema.jobs.id})`);
     if (myCompanies.length > 0) {
       const ids = myCompanies.map((c) => c.id);
@@ -110,11 +110,13 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     )
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(
-      sort === "created"
-        ? desc(schema.jobs.createdAt)
-        : sort === "posted"
-          ? sql`${schema.jobs.postedAt} DESC NULLS LAST`
-          : sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`,
+      tab === "suggested"
+        ? sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`
+        : sort === "created"
+          ? desc(schema.jobs.createdAt)
+          : sort === "posted"
+            ? sql`${schema.jobs.postedAt} DESC NULLS LAST`
+            : sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`,
     )
     .limit(200);
 
@@ -130,7 +132,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   return (
     <Shell tab={tab} q={q} days={days} status={statusFilter} sort={sort}>
       {jobs.length === 0 ? (
-        <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : tab === "suggested" ? "Nothing above the 70% match bar yet — scores refresh with each pipeline sweep, and a richer profile on the Resume tab sharpens them." : "Nothing in the global feed matches your filters yet."} />
+        <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : tab === "suggested" ? "Nothing above the 20% match bar yet — scores refresh with each pipeline sweep, and a richer profile on the Resume tab sharpens them." : "Nothing in the global feed matches your filters yet."} />
       ) : (
         <JobsTable jobs={jobs} tab={tab} />
       )}
