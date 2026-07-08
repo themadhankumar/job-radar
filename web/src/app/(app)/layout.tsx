@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Radar, Building2, Settings } from "lucide-react";
+import { Radar, Building2, FileText, Settings } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { getSessionUser } from "@/lib/auth";
 import { LogoutButton, ThemeToggle } from "@/components/shell-actions";
@@ -13,6 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const nav = [
     { href: "/radar", label: "Radar", icon: Radar },
     { href: "/companies", label: "Companies", icon: Building2 },
+    { href: "/resume", label: "Resume", icon: FileText },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
