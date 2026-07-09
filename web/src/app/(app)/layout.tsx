@@ -4,6 +4,7 @@ import { Radar, Building2, Target, FileText, UserRound, Settings } from "lucide-
 import { Logo } from "@/components/logo";
 import { getSessionUser } from "@/lib/auth";
 import { LogoutButton, ThemeToggle } from "@/components/shell-actions";
+import { MobileNav } from "@/components/mobile-nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
@@ -36,13 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-1"><ThemeToggle /><LogoutButton /></div>
         </div>
       </aside>
-      <nav className="surface fixed inset-x-0 bottom-0 z-20 flex justify-around border-x-0 border-b-0 py-2 sm:hidden">
-        {nav.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} className="flex flex-col items-center gap-0.5 px-4 py-1 text-xs t-muted">
-            <Icon size={18} /> {label}
-          </Link>
-        ))}
-      </nav>
+      <MobileNav />
       <main className="w-full pb-20 sm:pb-0 sm:pl-56">{children}</main>
     </div>
   );
