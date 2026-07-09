@@ -3,6 +3,7 @@ import { db, schema } from "@/db";
 import { getSessionUser } from "@/lib/auth";
 import { JobsTable, type JobRow } from "@/components/jobs-table";
 import { RadarFilters } from "@/components/radar-filters";
+import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
 
@@ -166,7 +167,10 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
 function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string; sort: string }) {
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-8">
-      <h1 className="mb-1 text-2xl font-semibold tracking-tight">Radar</h1>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Radar</h1>
+        <RefreshButton />
+      </div>
       <p className="t-muted mb-6 text-sm">Open roles across your watchlist, newest signal first.</p>
       <RadarFilters {...filters} />
       {children}
