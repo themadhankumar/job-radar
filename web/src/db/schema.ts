@@ -42,6 +42,7 @@ export const userKeywords = pgTable("user_keywords", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   keyword: text("keyword").notNull(),
   kind: text("kind", { enum: ["include", "exclude"] }).default("include").notNull(),
+  scope: text("scope", { enum: ["tracked", "global"] }).default("tracked").notNull(),
 });
 
 export const companies = pgTable("companies", {
