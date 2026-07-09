@@ -22,8 +22,15 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   const sort = ["posted", "created"].includes(searchParams.sort ?? "") ? searchParams.sort! : "suggested";
 
   const keywords = await db.select().from(schema.userKeywords).where(eq(schema.userKeywords.userId, user.id));
-  const include = keywords.filter((k) => k.kind === "include").map((k) => k.keyword);
-  const exclude = keywords.filter((k) => k.kind === "exclude").map((k) => k.keyword);
+  const pick = (scope: "tracked" | "global", kind: "include" | "exclude") =>
+    keywords.filter((k) => k.scope === scope && k.kind === kind).map((k) => k.keyword);
+  const trackedInclude = pick("tracked", "include");
+  const trackedExclude = pick("tracked", "exclude");
+  const globalInclude = pick("global", "include");
+  const globalExclude = pick("global", "exclude");
+  // Global mirrors Tracked roles until the user sets Global-specific ones.
+  const include = tab === "global" ? (globalInclude.length ? globalInclude : trackedInclude) : trackedInclude;
+  const exclude = tab === "global" ? (globalExclude.length ? globalExclude : trackedExclude) : trackedExclude;
 
   const myCompanies = await db
     .select({ id: schema.userCompanies.companyId, name: schema.companies.name })
