@@ -105,12 +105,13 @@ export function RadarFilters({ tab, q, days, status, sort }: { tab: string; q: s
           placeholder="Search title, company, location…"
           className="input max-w-xs"
         />
-        <select value={days || ""} onChange={(e) => setParam("days", e.target.value)} className="input w-auto">
-          <option value="">Any date</option>
+        <select value={String(days)} onChange={(e) => setParam("days", e.target.value)} className="input w-auto">
+          <option value="0">Any date</option>
           <option value="1">Past day</option>
           <option value="7">Past week</option>
           <option value="14">Past 2 weeks</option>
           <option value="30">Past month</option>
+          <option value="90">Past 3 months</option>
         </select>
         <select value={sort === "suggested" ? "" : sort} onChange={(e) => setParam("sort", e.target.value)} className="input w-auto">
           <option value="">Best match</option>
