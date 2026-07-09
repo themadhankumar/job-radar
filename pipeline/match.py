@@ -29,7 +29,7 @@ import requests
 from score import STOP, similarity, tokens
 
 WEIGHTS = {"skills": 0.30, "role": 0.25, "work": 0.20, "exp": 0.15, "industry": 0.10}
-LOOKBACK_DAYS = 45
+LOOKBACK_DAYS = 15
 MAX_JOBS = 4000
 CLASSIFY_CAP = 40  # new companies classified per run
 CLASSIFY_MODEL = "claude-haiku-4-5"
@@ -242,7 +242,13 @@ def compute_matches(conn, lookback_days: int = LOOKBACK_DAYS) -> int:
     n = len(docs)
     idf = {t: 1.0 + math.log(n / (1 + c)) for t, c in df.items()}
 
-    total = 0
+    score_sql = (
+        "INSERT INTO user_job_scores (user_id, job_id, score, components) "
+        "VALUES (%s,%s,%s,%s) "
+        "ON CONFLICT (user_id, job_id) DO UPDATE SET "
+        "score = EXCLUDED.score, components = EXCLUDED.components, computed_at = NOW()"
+    )
+    batch: list[tuple] = []
     for u in users:
         profile = u["profile"] or {}
         kws = [r["keyword"] for r in conn.execute(
@@ -257,7 +263,16 @@ def compute_matches(conn, lookback_days: int = LOOKBACK_DAYS) -> int:
         if not skills and not resume_toks:
             continue
 
+        # Incremental: only score jobs this user hasn't been scored against yet.
+        # A profile or resume change clears the user's rows (see web invalidation),
+        # so those recompute here on the next run; steady-state only touches new jobs.
+        scored = {r["job_id"] for r in conn.execute(
+            "SELECT job_id FROM user_job_scores WHERE user_id=%s", (u["id"],)
+        ).fetchall()}
+
         for j, dtoks in zip(jobs, docs):
+            if j["id"] in scored:
+                continue
             text = (j["title"] or "") + " " + (j["description"] or "")
             tl = text.lower()
             s_skills, _ = skills_score(skills, tl)
@@ -275,14 +290,10 @@ def compute_matches(conn, lookback_days: int = LOOKBACK_DAYS) -> int:
                 "exp": round(s_exp, 2), "industry": round(s_ind, 2),
                 "missing": missing_terms(dtoks, idf, known) if score >= 40 else [],
             }
-            conn.execute(
-                """INSERT INTO user_job_scores (user_id, job_id, score, components)
-                   VALUES (%s,%s,%s,%s)
-                   ON CONFLICT (user_id, job_id)
-                   DO UPDATE SET score = EXCLUDED.score, components = EXCLUDED.components,
-                                 computed_at = NOW()""",
-                (u["id"], j["id"], score, json.dumps(components)),
-            )
-            total += 1
+            batch.append((u["id"], j["id"], score, json.dumps(components)))
+
+    if batch:
+        with conn.cursor() as cur:
+            cur.executemany(score_sql, batch)
     conn.commit()
-    return total
+    return len(batch)

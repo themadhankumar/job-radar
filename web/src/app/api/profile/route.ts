@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getSessionUser } from "@/lib/auth";
-import { getProfile, normalizeProfile, parseResumeProfile, upsertProfile } from "@/lib/profile";
+import { getProfile, invalidateUserScores, normalizeProfile, parseResumeProfile, upsertProfile } from "@/lib/profile";
 import { resolveKey } from "@/lib/studio";
 
 export const runtime = "nodejs";
@@ -44,6 +44,7 @@ export async function PUT(req: Request) {
   if (!body?.data) return NextResponse.json({ error: "Nothing to save." }, { status: 400 });
   const data = normalizeProfile(body.data);
   await upsertProfile(user.id, data, true);
+  await invalidateUserScores(user.id);
   return NextResponse.json({ ok: true, data });
 }
 
@@ -58,6 +59,7 @@ export async function POST() {
   try {
     const profile = await parseResumeProfile(key, resume.content);
     await upsertProfile(user.id, profile, false);
+    await invalidateUserScores(user.id);
     return NextResponse.json({ ok: true, data: profile });
   } catch (err) {
     console.error("profile re-parse:", err);

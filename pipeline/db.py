@@ -58,21 +58,30 @@ def all_include_keywords(conn) -> list[str]:
 
 
 def insert_jobs(conn, jobs: list[Job], company_id: int | None = None) -> int:
-    """Insert jobs, skipping ones already seen. Returns count of new rows."""
-    new = 0
+    """Insert jobs, skipping ones already seen. Returns count of new rows.
+
+    Batched via executemany (psycopg3 pipelines it and sums rowcount), so a full
+    board is one round-trip instead of one per posting — the dominant recurring
+    cost when most rows are duplicates skipped by ON CONFLICT.
+    """
+    if not jobs:
+        return 0
+    params = [
+        (j.source, company_id, j.company, j.job_id, j.title[:500], j.url,
+         j.location[:500], j.description[:20000], j.posted_at)
+        for j in jobs
+    ]
     with conn.cursor() as cur:
-        for j in jobs:
-            cur.execute(
-                """INSERT INTO jobs (source, company_id, company_name, ext_id, title, url,
-                                     location, description, posted_at)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                   ON CONFLICT (source, company_name, ext_id) DO NOTHING""",
-                (j.source, company_id, j.company, j.job_id, j.title[:500], j.url,
-                 j.location[:500], j.description[:20000], j.posted_at),
-            )
-            new += cur.rowcount
+        cur.executemany(
+            """INSERT INTO jobs (source, company_id, company_name, ext_id, title, url,
+                                 location, description, posted_at)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               ON CONFLICT (source, company_name, ext_id) DO NOTHING""",
+            params,
+        )
+        new = cur.rowcount
     conn.commit()
-    return new
+    return max(new, 0)
 
 
 def users_for_notion(conn) -> list[dict]:
