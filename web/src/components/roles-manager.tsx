@@ -1,15 +1,18 @@
 "use client";
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 
 type Scope = "tracked" | "global";
 type Kind = "include" | "exclude";
 type KW = { id: number; keyword: string; kind: Kind; scope: Scope };
+type Suggestion = { role: string; reason: string };
 
 export function RolesManager({ initial }: { initial: KW[] }) {
   const [items, setItems] = useState<KW[]>(initial);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggesting, setSuggesting] = useState(false);
 
   const group = (scope: Scope, kind: Kind) =>
     items.filter((i) => i.scope === scope && i.kind === kind);
@@ -42,19 +45,58 @@ export function RolesManager({ initial }: { initial: KW[] }) {
     });
   }
 
+  async function suggest() {
+    setSuggesting(true);
+    setErr("");
+    const res = await fetch("/api/roles/suggest", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    setSuggesting(false);
+    if (!res.ok) {
+      setErr(data.error ?? "Couldn't suggest roles.");
+      return;
+    }
+    setSuggestions(data.suggestions ?? []);
+  }
+
+  async function accept(scope: Scope, role: string) {
+    setSuggestions((p) => p.filter((s) => s.role !== role));
+    await add(scope, "include", role);
+  }
+
   return (
-    <section className="mt-8">
-      <h2 className="mb-1 text-lg font-semibold tracking-tight">Roles</h2>
-      <p className="t-muted mb-4 text-sm">
-        The roles and keywords that drive each radar. Global falls back to your Tracked roles
-        until you add Global-specific ones.
-      </p>
+    <div>
       {err && <p className="mb-3 text-sm text-red-400">{err}</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Panel title="Tracked roles" subtitle="Filters jobs from your watchlist companies" scope="tracked" group={group} add={add} remove={remove} busy={busy} />
         <Panel title="Global roles" subtitle="Filters discovery across all other companies" scope="global" group={group} add={add} remove={remove} busy={busy} />
       </div>
-    </section>
+      <p className="t-muted mt-2 text-xs">
+        Global falls back to your Tracked roles until you add Global-specific ones. The Suggested
+        tab is driven by your resume match, not these keywords.
+      </p>
+
+      <div className="mt-6">
+        <button onClick={suggest} disabled={suggesting} className="btn-ghost text-sm">
+          <Sparkles size={14} /> {suggesting ? "Thinking…" : "Suggest roles"}
+        </button>
+        {suggestions.length > 0 && (
+          <ul className="mt-3 space-y-2">
+            {suggestions.map((s) => (
+              <li key={s.role} className="surface flex items-center justify-between gap-3 rounded-lg p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium capitalize">{s.role}</p>
+                  <p className="t-muted text-xs">{s.reason}</p>
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  <button onClick={() => accept("tracked", s.role)} className="btn-ghost text-xs">+ Tracked</button>
+                  <button onClick={() => accept("global", s.role)} className="btn-ghost text-xs">+ Global</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
