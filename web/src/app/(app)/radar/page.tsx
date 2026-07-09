@@ -12,7 +12,12 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   const user = (await getSessionUser())!;
   const tab = ["global", "suggested"].includes(searchParams.tab ?? "") ? (searchParams.tab as "global" | "suggested") : "tracked";
   const q = (searchParams.q ?? "").trim();
-  const days = Math.min(Math.max(parseInt(searchParams.days ?? "0") || 0, 0), 90);
+  // Default to the last 30 days when no date filter is set; an explicit days=0
+  // (the "Any date" option) widens it to everything.
+  const days =
+    searchParams.days === undefined
+      ? 30
+      : Math.min(Math.max(parseInt(searchParams.days) || 0, 0), 90);
   const statusFilter = searchParams.status ?? "";
   const sort = ["posted", "created"].includes(searchParams.sort ?? "") ? searchParams.sort! : "suggested";
 
@@ -62,6 +67,17 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       conds.push(sql`(${schema.jobs.companyId} IS NULL OR ${schema.jobs.companyId} NOT IN ${ids})`);
       conds.push(sql`lower(${schema.jobs.companyName}) NOT IN ${names}`);
     }
+  }
+  if (tab === "global") {
+    // Keep the three tabs disjoint: Global excludes watchlist companies (they
+    // live in Tracked) and anything that clears the Suggested bar (score >= 20).
+    if (myCompanies.length > 0) {
+      const ids = myCompanies.map((c) => c.id);
+      const names = myCompanies.map((c) => c.name.toLowerCase());
+      conds.push(sql`(${schema.jobs.companyId} IS NULL OR ${schema.jobs.companyId} NOT IN ${ids})`);
+      conds.push(sql`lower(${schema.jobs.companyName}) NOT IN ${names}`);
+    }
+    conds.push(sql`(sc.score IS NULL OR sc.score < 20)`);
   }
   for (const k of exclude) {
     conds.push(sql`${schema.jobs.title} NOT ILIKE ${"%" + k + "%"}`);
