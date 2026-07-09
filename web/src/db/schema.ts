@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   onboarded: boolean("onboarded").default(false).notNull(),
   digestEnabled: boolean("digest_enabled").default(true).notNull(),
   usOnly: boolean("us_only").default(false).notNull(),
+  suggestedThreshold: integer("suggested_threshold").default(35).notNull(),
   anthropicKeyEnc: text("anthropic_key_enc"),
   notionTokenEnc: text("notion_token_enc"),
   notionDatabaseId: text("notion_database_id"),

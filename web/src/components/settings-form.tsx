@@ -5,6 +5,7 @@ export function SettingsForm(props: {
   digestEnabled: boolean;
   needsSponsorship: boolean;
   usOnly: boolean;
+  suggestedThreshold: number;
   hasKey: boolean;
   hasNotion: boolean;
   notionDatabaseId: string;
@@ -13,6 +14,7 @@ export function SettingsForm(props: {
   const [digest, setDigest] = useState(props.digestEnabled);
   const [sponsor, setSponsor] = useState(props.needsSponsorship);
   const [usOnly, setUsOnly] = useState(props.usOnly);
+  const [threshold, setThreshold] = useState(props.suggestedThreshold);
   const [apiKey, setApiKey] = useState("");
   const [notionToken, setNotionToken] = useState("");
   const [notionDb, setNotionDb] = useState(props.notionDatabaseId);
@@ -47,6 +49,17 @@ export function SettingsForm(props: {
           <input type="checkbox" checked={usOnly} className="accent-[rgb(var(--accent))]"
             onChange={(e) => { setUsOnly(e.target.checked); save({ usOnly: e.target.checked }, "US-only preference"); }} />
         </label>
+        <div className="py-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span>Suggested match bar<span className="t-muted block text-xs">Jobs need at least this match % to appear on the Suggested tab.</span></span>
+            <span className="t-accent w-12 text-right font-mono">{threshold}%</span>
+          </div>
+          <input type="range" min={10} max={90} step={5} value={threshold}
+            className="mt-2 w-full accent-[rgb(var(--accent))]"
+            onChange={(e) => setThreshold(Number(e.target.value))}
+            onMouseUp={() => save({ suggestedThreshold: threshold }, "Suggested threshold")}
+            onTouchEnd={() => save({ suggestedThreshold: threshold }, "Suggested threshold")} />
+        </div>
       </section>
 
 
