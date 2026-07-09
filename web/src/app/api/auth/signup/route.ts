@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { createSession } from "@/lib/auth";
+import { authErrorResponse } from "@/lib/api-errors";
 
 const Body = z.object({
   name: z.string().min(1).max(80),
@@ -24,7 +25,6 @@ export async function POST(req: Request) {
     await createSession(user.id);
     return NextResponse.json({ onboarded: false });
   } catch (e: unknown) {
-    const msg = e instanceof Error && e.message.includes("unique") ? "An account with this email already exists." : "Could not create the account.";
-    return NextResponse.json({ error: msg }, { status: 409 });
+    return authErrorResponse(e, "signup");
   }
 }
