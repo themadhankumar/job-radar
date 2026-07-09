@@ -7,7 +7,7 @@ type Preset = { id: number; name: string; params: Record<string, string> };
 
 const LAST_KEY = "radar:lastFilters";
 
-export function RadarFilters({ tab, q, days, status, sort }: { tab: string; q: string; days: number; status: string; sort: string }) {
+export function RadarFilters({ tab, q, days, status }: { tab: string; q: string; days: number; status: string }) {
   const router = useRouter();
   const params = useSearchParams();
   const [search, setSearch] = useState(q);
@@ -40,6 +40,15 @@ export function RadarFilters({ tab, q, days, status, sort }: { tab: string; q: s
       localStorage.setItem(LAST_KEY, params.toString());
     } catch { /* ignore */ }
   }, [params, router]);
+
+  // Debounced search — applies as you type, Enter still applies instantly.
+  useEffect(() => {
+    const current = params.get("q") ?? "";
+    if (search === current) return;
+    const t = setTimeout(() => setParam("q", search), 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   useEffect(() => {
     fetch("/api/presets").then((r) => r.json()).then((d) => setPresets(d.presets ?? [])).catch(() => {});
@@ -112,11 +121,6 @@ export function RadarFilters({ tab, q, days, status, sort }: { tab: string; q: s
           <option value="14">Past 2 weeks</option>
           <option value="30">Past month</option>
           <option value="90">Past 3 months</option>
-        </select>
-        <select value={sort === "suggested" ? "" : sort} onChange={(e) => setParam("sort", e.target.value)} className="input w-auto">
-          <option value="">Best match</option>
-          <option value="posted">Newest posted</option>
-          <option value="created">Newest found</option>
         </select>
         <select value={status} onChange={(e) => setParam("status", e.target.value)} className="input w-auto">
           <option value="">All statuses</option>

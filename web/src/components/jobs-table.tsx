@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { ExternalLink, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowDown, ArrowUp, ExternalLink, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
 import { htmlToText } from "@/lib/text";
@@ -94,7 +95,29 @@ function isFresh(createdAt: string): boolean {
   return Date.now() - new Date(createdAt).getTime() < 48 * 3_600_000;
 }
 
-export function JobsTable({ jobs, tab: radarTab = "tracked" }: { jobs: JobRow[]; tab?: string }) {
+const SORTABLE: Record<string, { key: string; defaultDir: "asc" | "desc" }> = {
+  Match: { key: "match", defaultDir: "desc" },
+  Company: { key: "company", defaultDir: "asc" },
+  Pay: { key: "pay", defaultDir: "desc" },
+  Location: { key: "location", defaultDir: "asc" },
+  Posted: { key: "posted", defaultDir: "desc" },
+};
+
+export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir = "desc" }: { jobs: JobRow[]; tab?: string; sort?: string; dir?: string }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const sortLocked = radarTab === "suggested";
+
+  function onSort(label: string) {
+    const col = SORTABLE[label];
+    if (!col || sortLocked) return;
+    const nextDir = sort === col.key ? (dir === "desc" ? "asc" : "desc") : col.defaultDir;
+    const next = new URLSearchParams(params.toString());
+    if (col.key === "match") next.delete("sort"); else next.set("sort", col.key);
+    if (nextDir === col.defaultDir) next.delete("dir"); else next.set("dir", nextDir);
+    router.push(`/radar?${next.toString()}`);
+  }
+
   const [hidden, setHidden] = useState<Set<number>>(new Set());
 
   async function dismiss(jobId: number) {
@@ -126,9 +149,23 @@ export function JobsTable({ jobs, tab: radarTab = "tracked" }: { jobs: JobRow[];
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[rgb(var(--border))] text-left">
-              {["Match", "Role", "Company", "Pay", "Location", "Posted", "Status"].map((h) => (
-                <th key={h} className="t-muted px-4 py-2.5 text-xs font-medium uppercase tracking-wide">{h}</th>
-              ))}
+              {["Match", "Role", "Company", "Pay", "Location", "Posted", "Status"].map((h) => {
+                const col = SORTABLE[h];
+                const active = col && !sortLocked && sort === col.key;
+                const clickable = col && !sortLocked;
+                return (
+                  <th key={h}
+                    onClick={() => onSort(h)}
+                    title={col && sortLocked ? "Suggested is always sorted by match" : clickable ? `Sort by ${h.toLowerCase()}` : undefined}
+                    aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined}
+                    className={`t-muted px-4 py-2.5 text-xs font-medium uppercase tracking-wide ${clickable ? "cursor-pointer select-none hover:text-[rgb(var(--accent))]" : ""} ${active ? "t-accent" : ""}`}>
+                    <span className="inline-flex items-center gap-1">
+                      {h}
+                      {active && (dir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />)}
+                    </span>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
