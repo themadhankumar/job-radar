@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, gte, inArray, or, sql, type SQL } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getSessionUser } from "@/lib/auth";
 import { JobsTable, type JobRow } from "@/components/jobs-table";
@@ -7,7 +7,13 @@ import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
 
-type Search = { tab?: string; q?: string; days?: string; status?: string; sort?: string };
+type Search = { tab?: string; q?: string; days?: string; status?: string; sort?: string; dir?: string };
+
+const SORT_KEYS = ["match", "posted", "created", "pay", "company", "location"] as const;
+type SortKey = (typeof SORT_KEYS)[number];
+const DEFAULT_DIR: Record<SortKey, "asc" | "desc"> = {
+  match: "desc", posted: "desc", created: "desc", pay: "desc", company: "asc", location: "asc",
+};
 
 export default async function RadarPage({ searchParams }: { searchParams: Search }) {
   const user = (await getSessionUser())!;
@@ -20,7 +26,24 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       ? 14
       : Math.min(Math.max(parseInt(searchParams.days) || 0, 0), 90);
   const statusFilter = searchParams.status ?? "";
-  const sort = ["posted", "created"].includes(searchParams.sort ?? "") ? searchParams.sort! : "suggested";
+  const sort: SortKey = (SORT_KEYS as readonly string[]).includes(searchParams.sort ?? "") ? (searchParams.sort as SortKey) : "match";
+  const dir: "asc" | "desc" = searchParams.dir === "asc" || searchParams.dir === "desc" ? searchParams.dir : DEFAULT_DIR[sort];
+  // Suggested is always best-match-first (locked decision) — headers are locked there.
+  const d = sql.raw(dir === "asc" ? "ASC" : "DESC");
+  const orderExpr =
+    tab === "suggested"
+      ? sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`
+      : sort === "posted"
+        ? sql`${schema.jobs.postedAt} ${d} NULLS LAST`
+        : sort === "created"
+          ? sql`${schema.jobs.createdAt} ${d}`
+          : sort === "pay"
+            ? sql`(CASE WHEN ${schema.jobs.payPeriod} = 'hour' THEN COALESCE(${schema.jobs.payMax}, ${schema.jobs.payMin}) * 2080 ELSE COALESCE(${schema.jobs.payMax}, ${schema.jobs.payMin}) END) ${d} NULLS LAST`
+            : sort === "company"
+              ? sql`lower(${schema.jobs.companyName}) ${d}`
+              : sort === "location"
+                ? sql`NULLIF(lower(${schema.jobs.location}), '') ${d} NULLS LAST`
+                : sql`sc.score ${d} NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`;
 
   const keywords = await db.select().from(schema.userKeywords).where(eq(schema.userKeywords.userId, user.id));
   const pick = (scope: "tracked" | "global", kind: "include" | "exclude") =>
@@ -44,7 +67,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   if (tab === "tracked") {
     if (myCompanies.length === 0) {
       return (
-        <Shell tab={tab} q={q} days={days} status={statusFilter} sort={sort}>
+        <Shell tab={tab} q={q} days={days} status={statusFilter}>
           <Empty text="Add companies to your watchlist to light up this radar." />
         </Shell>
       );
@@ -133,15 +156,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       sql`sc.job_id = ${schema.jobs.id} AND sc.user_id = ${user.id}`,
     )
     .where(conds.length ? and(...conds) : undefined)
-    .orderBy(
-      tab === "suggested"
-        ? sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`
-        : sort === "created"
-          ? desc(schema.jobs.createdAt)
-          : sort === "posted"
-            ? sql`${schema.jobs.postedAt} DESC NULLS LAST`
-            : sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`,
-    )
+    .orderBy(orderExpr)
     .limit(200);
 
   let jobs: JobRow[] = rows.map((r) => ({
@@ -154,17 +169,17 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   if (statusFilter) jobs = jobs.filter((j) => j.status === statusFilter);
 
   return (
-    <Shell tab={tab} q={q} days={days} status={statusFilter} sort={sort}>
+    <Shell tab={tab} q={q} days={days} status={statusFilter}>
       {jobs.length === 0 ? (
         <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : tab === "suggested" ? "Nothing above the 20% match bar yet — scores refresh with each pipeline sweep, and a richer profile on the Resume tab sharpens them." : "Nothing in the global feed matches your filters yet."} />
       ) : (
-        <JobsTable jobs={jobs} tab={tab} />
+        <JobsTable jobs={jobs} tab={tab} sort={sort} dir={dir} />
       )}
     </Shell>
   );
 }
 
-function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string; sort: string }) {
+function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string }) {
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-8">
       <div className="mb-1 flex items-center justify-between gap-2">
