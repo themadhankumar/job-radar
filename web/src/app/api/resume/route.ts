@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getSessionUser } from "@/lib/auth";
-import { getProfile, parseResumeProfile, upsertProfile } from "@/lib/profile";
+import { getProfile, invalidateUserScores, parseResumeProfile, upsertProfile } from "@/lib/profile";
 import { resolveKey } from "@/lib/studio";
 
 export const runtime = "nodejs";
@@ -72,6 +72,9 @@ export async function POST(req: Request) {
         target: schema.resumes.userId,
         set: { filename: file.name, content, fileB64, fileKind: kind, updatedAt: new Date() },
       });
+    // New resume text changes the "work" match component, so drop cached scores;
+    // the pipeline recomputes them on its next run.
+    await invalidateUserScores(uid);
     // Parse a structured profile from the new resume. Hand-edited profiles are
     // preserved — the Resume page offers an explicit re-parse instead.
     let profileUpdated = false;

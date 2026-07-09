@@ -93,3 +93,13 @@ export async function upsertProfile(userId: number, data: ProfileData, edited: b
       set: { data, edited, updatedAt: new Date() },
     });
 }
+
+/**
+ * Drop a user's cached match scores so the pipeline recomputes them from
+ * scratch on its next run. Call whenever the inputs to scoring change — a
+ * profile edit/re-parse or a resume replace. The pipeline scores incrementally
+ * (only jobs without a score row), so clearing here is what triggers a rescore.
+ */
+export async function invalidateUserScores(userId: number) {
+  await db.delete(schema.userJobScores).where(eq(schema.userJobScores.userId, userId));
+}
