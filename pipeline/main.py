@@ -112,7 +112,7 @@ def main() -> int:
     enriched = enrich_new_jobs(conn)
     tagged = tag_countries(conn)
     scored = compute_matches(conn)
-    console.print(f"[dim]enriched {enriched} jobs, tagged {tagged} countries, refreshed {scored} profile-match scores[/dim]")
+    console.print(f"[dim]enriched {enriched} jobs, tagged {tagged} job locations, refreshed {scored} profile-match scores[/dim]")
 
     # ---- Per-user Notion push ----
     if not args.no_notion and total_new > 0:
