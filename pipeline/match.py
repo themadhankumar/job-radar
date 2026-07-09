@@ -30,7 +30,9 @@ from score import STOP, similarity, tokens
 
 WEIGHTS = {"skills": 0.30, "role": 0.25, "work": 0.20, "exp": 0.15, "industry": 0.10}
 LOOKBACK_DAYS = 15
-MAX_JOBS = 4000
+MAX_JOBS = 20000  # safety valve only — must exceed jobs-per-window or newest-first
+                  # selection starves older-but-unscored jobs (bug: 6.5k jobs, 4k cap
+                  # left target roles permanently unscored)
 CLASSIFY_CAP = 40  # new companies classified per run
 CLASSIFY_MODEL = "claude-haiku-4-5"
 
@@ -54,8 +56,10 @@ def _contains(text_lower: str, term: str) -> bool:
 
 
 def skills_score(profile_skills: list[str], text_lower: str) -> tuple[float, list[str]]:
+    # /5: postings rarely name-drop 8 profile skills verbatim; empirically even
+    # strong fits matched ~2-4, capping real scores near 60. 5 saturates sanely.
     matched = [s for s in profile_skills if _contains(text_lower, s)]
-    return min(1.0, len(matched) / 8.0), matched
+    return min(1.0, len(matched) / 5.0), matched
 
 
 ABBREV = {
@@ -277,7 +281,9 @@ def compute_matches(conn, lookback_days: int = LOOKBACK_DAYS) -> int:
             tl = text.lower()
             s_skills, _ = skills_score(skills, tl)
             s_role = role_score(titles, j["title"] or "")
-            s_work = min(similarity(resume_toks, text, idf) * 2.5, 1.0) if resume_toks else 0.0
+            # x4: resume-vs-posting TF-IDF cosine tops out ~0.15-0.25 in practice; 2.5 kept
+            # this component near-zero (avg 0.14 even among top matches).
+            s_work = min(similarity(resume_toks, text, idf) * 4.0, 1.0) if resume_toks else 0.0
             s_exp = exp_score(yoe, j["yoe_min"])
             s_ind = industry_score(industries, cached.get(_norm(j["company_name"])))
             score = round(100 * (
