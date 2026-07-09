@@ -6,6 +6,10 @@ on:
     - cron: "0 22 * * *"    # ~5 PM Central — pre-digest fetch
   workflow_dispatch: {}
 
+# One pipeline at a time; a second trigger queues instead of overlapping.
+concurrency:
+  group: radar-pipeline
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
