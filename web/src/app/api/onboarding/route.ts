@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { getSessionUserId } from "@/lib/auth";
+import { dispatchRun, latestRun } from "@/lib/github";
 
 const Body = z.object({
   keywords: z.array(z.string().min(1).max(80)).min(1).max(40),
@@ -51,5 +52,22 @@ export async function POST(req: Request) {
   }
 
   await db.update(schema.users).set({ needsSponsorship, onboarded: true }).where(eq(schema.users.id, uid));
-  return NextResponse.json({ ok: true });
+
+  // Cold start: kick a pipeline run so this user's match scores appear in
+  // ~15 min instead of waiting for the next scheduled sweep. Deliberately
+  // bypasses the manual-refresh cooldown (a brand-new user is always a
+  // legitimate trigger); the workflow's concurrency group serializes runs.
+  // Best-effort — silently skipped when GH_DISPATCH_TOKEN isn't configured
+  // or a run is already active.
+  let scoring = false;
+  try {
+    const run = await latestRun();
+    if (run !== "unconfigured" && (!run || run.status === "completed")) {
+      await dispatchRun();
+      scoring = true;
+    }
+  } catch {
+    /* best-effort */
+  }
+  return NextResponse.json({ ok: true, scoring });
 }
