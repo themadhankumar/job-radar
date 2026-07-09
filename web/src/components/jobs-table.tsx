@@ -24,6 +24,7 @@ export type JobRow = {
   payPeriod: string | null;
   yoeMin: number | null;
   sponsorApprovals: number | null;
+  otherLocations?: string[];
   components: MatchComponents | null;
 };
 
@@ -187,7 +188,9 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                   </td>
                   <td className="truncate px-3 py-3" title={j.companyName}>{j.companyName}</td>
                   <td className="t-muted truncate px-3 py-3">{pay(j) ?? "—"}</td>
-                  <td className="t-muted truncate px-3 py-3" title={j.location}>{j.location || "—"}</td>
+                  <td className="t-muted truncate px-3 py-3" title={[j.location, ...(j.otherLocations ?? [])].filter(Boolean).join(" · ")}>
+                    {j.location || "—"}{j.otherLocations?.length ? <span className="t-accent"> +{j.otherLocations.length}</span> : null}
+                  </td>
                   <td className="t-muted truncate px-3 py-3">{ago(j.postedAt)}</td>
                   <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                     <select value={st} onChange={(e) => setStatus(j.id, e.target.value)}

@@ -166,6 +166,23 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   }));
   if (statusFilter) jobs = jobs.filter((j) => j.status === statusFilter);
 
+  // Collapse duplicate postings of the same role (LinkedIn reposts one job per
+  // city). Keep the first row in the current sort order as the representative
+  // and fold the other locations into it.
+  const seen = new Map<string, JobRow>();
+  const grouped: JobRow[] = [];
+  for (const j of jobs) {
+    const key = `${j.companyName.toLowerCase().trim()}|${j.title.toLowerCase().trim()}`;
+    const first = seen.get(key);
+    if (first) {
+      if (j.location && j.location !== first.location) (first.otherLocations ??= []).push(j.location);
+    } else {
+      seen.set(key, j);
+      grouped.push(j);
+    }
+  }
+  jobs = grouped;
+
   return (
     <Shell tab={tab} q={q} days={days} status={statusFilter}>
       {jobs.length === 0 ? (
