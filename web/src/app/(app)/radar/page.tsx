@@ -28,12 +28,10 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   const statusFilter = searchParams.status ?? "";
   const sort: SortKey = (SORT_KEYS as readonly string[]).includes(searchParams.sort ?? "") ? (searchParams.sort as SortKey) : "match";
   const dir: "asc" | "desc" = searchParams.dir === "asc" || searchParams.dir === "desc" ? searchParams.dir : DEFAULT_DIR[sort];
-  // Suggested is always best-match-first (locked decision) — headers are locked there.
   const d = sql.raw(dir === "asc" ? "ASC" : "DESC");
+  const threshold = user.suggestedThreshold ?? 35;
   const orderExpr =
-    tab === "suggested"
-      ? sql`sc.score DESC NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`
-      : sort === "posted"
+    sort === "posted"
         ? sql`${schema.jobs.postedAt} ${d} NULLS LAST`
         : sort === "created"
           ? sql`${schema.jobs.createdAt} ${d}`
@@ -90,7 +88,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     conds.push(or(...include.map((k) => sql`${schema.jobs.title} ILIKE ${"%" + k + "%"}`))!);
   }
   if (tab === "suggested") {
-    conds.push(sql`sc.score >= 20`);
+    conds.push(sql`sc.score >= ${threshold}`);
     conds.push(sql`NOT EXISTS (SELECT 1 FROM user_dismissed_jobs d WHERE d.user_id = ${user.id} AND d.job_id = ${schema.jobs.id})`);
     if (myCompanies.length > 0) {
       const ids = myCompanies.map((c) => c.id);
@@ -101,14 +99,14 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   }
   if (tab === "global") {
     // Keep the three tabs disjoint: Global excludes watchlist companies (they
-    // live in Tracked) and anything that clears the Suggested bar (score >= 20).
+    // live in Tracked) and anything that clears the Suggested bar (score >= the user's threshold).
     if (myCompanies.length > 0) {
       const ids = myCompanies.map((c) => c.id);
       const names = myCompanies.map((c) => c.name.toLowerCase());
       conds.push(sql`(${schema.jobs.companyId} IS NULL OR ${schema.jobs.companyId} NOT IN ${ids})`);
       conds.push(sql`lower(${schema.jobs.companyName}) NOT IN ${names}`);
     }
-    conds.push(sql`(sc.score IS NULL OR sc.score < 20)`);
+    conds.push(sql`(sc.score IS NULL OR sc.score < ${threshold})`);
   }
   for (const k of exclude) {
     conds.push(sql`${schema.jobs.title} NOT ILIKE ${"%" + k + "%"}`);
@@ -171,7 +169,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   return (
     <Shell tab={tab} q={q} days={days} status={statusFilter}>
       {jobs.length === 0 ? (
-        <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : tab === "suggested" ? "Nothing above the 20% match bar yet — scores refresh with each pipeline sweep, and a richer profile on the Resume tab sharpens them." : "Nothing in the global feed matches your filters yet."} />
+        <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : tab === "suggested" ? `Nothing above your ${threshold}% match bar yet — lower it in Settings or enrich your profile on the Resume tab; scores refresh with each pipeline sweep.` : "Nothing in the global feed matches your filters yet."} />
       ) : (
         <JobsTable jobs={jobs} tab={tab} sort={sort} dir={dir} />
       )}
@@ -181,7 +179,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
 
 function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string }) {
   return (
-    <div className="mx-auto max-w-6xl p-4 sm:p-8">
+    <div className="mx-auto max-w-7xl p-4 sm:p-8">
       <div className="mb-1 flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Radar</h1>
         <RefreshButton />

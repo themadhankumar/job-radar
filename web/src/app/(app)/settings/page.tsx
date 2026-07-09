@@ -16,6 +16,7 @@ export default async function SettingsPage() {
       <SettingsForm
         digestEnabled={user.digestEnabled}
         usOnly={user.usOnly}
+        suggestedThreshold={user.suggestedThreshold ?? 35}
         needsSponsorship={user.needsSponsorship}
         hasKey={Boolean(user.anthropicKeyEnc)}
         hasNotion={Boolean(user.notionTokenEnc)}

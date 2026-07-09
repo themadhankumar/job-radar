@@ -106,11 +106,10 @@ const SORTABLE: Record<string, { key: string; defaultDir: "asc" | "desc" }> = {
 export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir = "desc" }: { jobs: JobRow[]; tab?: string; sort?: string; dir?: string }) {
   const router = useRouter();
   const params = useSearchParams();
-  const sortLocked = radarTab === "suggested";
 
   function onSort(label: string) {
     const col = SORTABLE[label];
-    if (!col || sortLocked) return;
+    if (!col) return;
     const nextDir = sort === col.key ? (dir === "desc" ? "asc" : "desc") : col.defaultDir;
     const next = new URLSearchParams(params.toString());
     if (col.key === "match") next.delete("sort"); else next.set("sort", col.key);
@@ -146,19 +145,23 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
   return (
     <>
       <div className="surface overflow-x-auto rounded-xl">
-        <table className="w-full text-sm">
+        <table className="w-full table-fixed text-sm">
+          <colgroup>
+            <col className="w-[7%]" /><col className="w-[31%]" /><col className="w-[15%]" /><col className="w-[8%]" />
+            <col className="w-[15%]" /><col className="w-[8%]" /><col className="w-[12%]" />
+            {radarTab === "suggested" && <col className="w-[4%]" />}
+          </colgroup>
           <thead>
             <tr className="border-b border-[rgb(var(--border))] text-left">
               {["Match", "Role", "Company", "Pay", "Location", "Posted", "Status"].map((h) => {
                 const col = SORTABLE[h];
-                const active = col && !sortLocked && sort === col.key;
-                const clickable = col && !sortLocked;
+                const active = col && sort === col.key;
                 return (
                   <th key={h}
                     onClick={() => onSort(h)}
-                    title={col && sortLocked ? "Suggested is always sorted by match" : clickable ? `Sort by ${h.toLowerCase()}` : undefined}
+                    title={col ? `Sort by ${h.toLowerCase()}` : undefined}
                     aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined}
-                    className={`t-muted px-4 py-2.5 text-xs font-medium uppercase tracking-wide ${clickable ? "cursor-pointer select-none hover:text-[rgb(var(--accent))]" : ""} ${active ? "t-accent" : ""}`}>
+                    className={`t-muted px-3 py-2.5 text-xs font-medium uppercase tracking-wide ${col ? "cursor-pointer select-none hover:text-[rgb(var(--accent))]" : ""} ${active ? "t-accent" : ""}`}>
                     <span className="inline-flex items-center gap-1">
                       {h}
                       {active && (dir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />)}
@@ -166,6 +169,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                   </th>
                 );
               })}
+              {radarTab === "suggested" && <th className="px-2" />}
             </tr>
           </thead>
           <tbody>
@@ -174,18 +178,18 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
               return (
                 <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); }}
                   className="cursor-pointer border-b border-[rgb(var(--border))] last:border-0 hover:bg-[rgb(var(--border))]/30">
-                  <td className="px-4 py-3"><ScoreBadge score={j.score} /></td>
-                  <td className="max-w-md px-4 py-3 font-medium">
+                  <td className="px-3 py-3"><ScoreBadge score={j.score} /></td>
+                  <td className="px-3 py-3 font-medium">
                     <span className="flex items-center">
                       {isFresh(j.createdAt) && st === "new" && <NewDot />}
                       <span className="truncate">{j.title}</span>
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3">{j.companyName}</td>
-                  <td className="t-muted whitespace-nowrap px-4 py-3">{pay(j) ?? "—"}</td>
-                  <td className="t-muted max-w-[200px] truncate px-4 py-3">{j.location || "—"}</td>
-                  <td className="t-muted whitespace-nowrap px-4 py-3">{ago(j.postedAt)}</td>
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <td className="truncate px-3 py-3" title={j.companyName}>{j.companyName}</td>
+                  <td className="t-muted truncate px-3 py-3">{pay(j) ?? "—"}</td>
+                  <td className="t-muted truncate px-3 py-3" title={j.location}>{j.location || "—"}</td>
+                  <td className="t-muted truncate px-3 py-3">{ago(j.postedAt)}</td>
+                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                     <select value={st} onChange={(e) => setStatus(j.id, e.target.value)}
                       className="rounded-md border border-[rgb(var(--border))] bg-transparent px-2 py-1 text-xs">
                       {STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
