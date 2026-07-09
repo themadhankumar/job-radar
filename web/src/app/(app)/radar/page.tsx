@@ -12,11 +12,11 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   const user = (await getSessionUser())!;
   const tab = ["global", "suggested"].includes(searchParams.tab ?? "") ? (searchParams.tab as "global" | "suggested") : "tracked";
   const q = (searchParams.q ?? "").trim();
-  // Default to the last 30 days when no date filter is set; an explicit days=0
+  // Default to the last 14 days when no date filter is set; an explicit days=0
   // (the "Any date" option) widens it to everything.
   const days =
     searchParams.days === undefined
-      ? 30
+      ? 14
       : Math.min(Math.max(parseInt(searchParams.days) || 0, 0), 90);
   const statusFilter = searchParams.status ?? "";
   const sort = ["posted", "created"].includes(searchParams.sort ?? "") ? searchParams.sort! : "suggested";
