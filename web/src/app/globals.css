@@ -2,23 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Signal-on-scope token system ─────────────────────────────
+   Cool near-black base; one amber accent that encodes signal
+   strength (match quality). Triplets consumed as rgb(var(--x))
+   or rgb(var(--x) / alpha). Dark is the primary theme. */
+
 :root {
-  --bg: 250 250 250;
+  --bg: 247 248 250;        /* cool paper */
   --surface: 255 255 255;
-  --border: 228 228 231;
-  --text: 24 24 27;
-  --muted: 113 113 122;
-  --accent: 15 118 110;
-  --accent-soft: 240 253 250;
+  --surface-2: 240 243 247; /* raised layer */
+  --border: 224 229 236;
+  --hairline: 20 25 34;     /* always used at low alpha */
+  --text: 20 25 34;
+  --muted: 100 109 128;
+  --accent: 180 83 9;       /* signal amber, darkened for light-mode contrast */
+  --accent-soft: 251 243 226;
+  --ok: 5 150 105;
+  --danger: 225 29 72;
+  --glow: 180 83 9;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 150ms;
+  --t-base: 200ms;
+  --t-slow: 240ms;
 }
+
 .dark {
-  --bg: 9 9 11;
-  --surface: 24 24 27;
-  --border: 39 39 42;
-  --text: 244 244 245;
-  --muted: 161 161 170;
-  --accent: 45 212 191;
-  --accent-soft: 19 40 38;
+  --bg: 10 13 18;           /* scope black */
+  --surface: 16 20 27;
+  --surface-2: 22 28 37;
+  --border: 35 43 56;
+  --hairline: 148 163 184;
+  --text: 232 237 244;
+  --muted: 139 148 167;
+  --accent: 255 178 36;     /* signal amber */
+  --accent-soft: 45 36 20;
+  --ok: 52 211 153;
+  --danger: 251 113 133;
+  --glow: 255 178 36;
 }
 
 body {
@@ -26,14 +47,43 @@ body {
   color: rgb(var(--text));
   font-feature-settings: "cv11", "ss01";
 }
+.dark body {
+  /* faint phosphor bloom at the top of the scope */
+  background-image: radial-gradient(1100px 620px at 50% -12%, rgb(var(--glow) / 0.045), transparent 70%);
+  background-attachment: fixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 @layer components {
   .surface { @apply bg-[rgb(var(--surface))] border border-[rgb(var(--border))]; }
+  .surface-2 { @apply bg-[rgb(var(--surface-2))] border border-[rgb(var(--border))]; }
+  .hairline { @apply border-[rgb(var(--hairline)/0.10)]; }
   .t-muted { @apply text-[rgb(var(--muted))]; }
   .t-accent { @apply text-[rgb(var(--accent))]; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--accent))] disabled:opacity-50 disabled:pointer-events-none h-9 px-4; }
-  .btn-primary { @apply btn bg-[rgb(var(--accent))] text-white hover:opacity-90 dark:text-zinc-900; }
-  .btn-ghost { @apply btn border border-[rgb(var(--border))] bg-transparent hover:bg-[rgb(var(--border))]/40; }
-  .input { @apply flex h-9 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 text-sm placeholder:text-[rgb(var(--muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--accent))]; }
+  .t-ok { @apply text-[rgb(var(--ok))]; }
+  .t-danger { @apply text-[rgb(var(--danger))]; }
+
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[background-color,border-color,color,box-shadow,opacity,filter] duration-200 ease-[var(--ease)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--accent))] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--bg))] disabled:opacity-50 disabled:pointer-events-none h-9 px-4; }
+  .btn-primary { @apply btn bg-[rgb(var(--accent))] text-white hover:brightness-105 hover:shadow-[0_0_20px_rgb(var(--glow)/0.35)] dark:text-[#0A0D12]; }
+  .btn-ghost { @apply btn border border-[rgb(var(--border))] bg-transparent hover:bg-[rgb(var(--surface-2))] hover:border-[rgb(var(--muted)/0.4)]; }
+
+  .input { @apply flex h-9 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 text-sm placeholder:text-[rgb(var(--muted))] transition-[border-color,box-shadow] duration-200 ease-[var(--ease)] focus-visible:outline-none focus-visible:border-[rgb(var(--accent)/0.6)] focus-visible:shadow-[0_0_0_1px_rgb(var(--accent)/0.4),0_0_18px_rgb(var(--glow)/0.15)]; }
+
   .chip { @apply inline-flex items-center rounded-full border border-[rgb(var(--border))] px-2 py-0.5 text-xs font-medium; }
+
+  /* Signal tiers — one hue, three intensities. Data set in the instrument face. */
+  .score-hi  { @apply font-data font-medium text-[rgb(var(--accent))] [text-shadow:0_0_12px_rgb(var(--glow)/0.55)]; }
+  .score-mid { @apply font-data font-medium text-[rgb(var(--accent)/0.55)]; }
+  .score-low { @apply font-data font-medium text-[rgb(var(--muted)/0.7)]; }
+
+  /* Skeleton shimmer while the pipeline refreshes */
+  .shimmer { @apply relative overflow-hidden rounded bg-[rgb(var(--surface-2))]; }
+  .shimmer::after { content: ""; @apply absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-[rgb(var(--text)/0.05)] to-transparent; }
 }

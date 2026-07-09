@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Martian_Mono } from "next/font/google";
 import "./globals.css";
+
+// Instrument face — data numerals only (match %, pay, YoE, sponsor counts).
+const martianMono = Martian_Mono({ subsets: ["latin"], variable: "--font-martian", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Job Radar",
@@ -18,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} ${martianMono.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>
