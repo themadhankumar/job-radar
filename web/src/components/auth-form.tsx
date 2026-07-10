@@ -50,6 +50,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             placeholder={mode === "signup" ? "Password (8+ characters)" : "Password"}
             className="input" autoComplete={mode === "signup" ? "new-password" : "current-password"}
           />
+          {mode === "login" && (
+            <div className="text-right">
+              <Link href="/forgot" className="t-muted text-xs hover:underline">Forgot password?</Link>
+            </div>
+          )}
           {error && <p className="text-sm text-red-500">{error}</p>}
           <button disabled={loading} className="btn-primary w-full">
             {loading ? "One moment…" : mode === "login" ? "Sign in" : "Create account"}
