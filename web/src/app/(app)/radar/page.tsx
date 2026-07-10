@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { JobsTable, type JobRow } from "@/components/jobs-table";
 import { RadarFilters } from "@/components/radar-filters";
 import { RefreshButton } from "@/components/refresh-button";
+import { EmptyState } from "@/components/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     if (myCompanies.length === 0) {
       return (
         <Shell tab={tab} q={q} days={days} status={statusFilter}>
-          <Empty text="Add companies to your watchlist to light up this radar." />
+          <EmptyState line="Your watchlist is empty — nothing on the scope yet." actionHref="/companies" actionLabel="Add companies to watch" />
         </Shell>
       );
     }
@@ -186,7 +187,13 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   return (
     <Shell tab={tab} q={q} days={days} status={statusFilter}>
       {jobs.length === 0 ? (
-        <Empty text={tab === "tracked" ? "No matches yet. The pipeline refreshes on schedule — or broaden your keywords in Settings." : tab === "suggested" ? `Nothing above your ${threshold}% match bar yet — lower it in Settings or enrich your profile on the Resume tab; scores refresh with each pipeline sweep.` : "Nothing in the global feed matches your filters yet."} />
+        tab === "tracked" ? (
+          <EmptyState line="No matches from your watchlist yet — the radar sweeps on schedule." actionHref="/roles" actionLabel="Broaden your roles" />
+        ) : tab === "suggested" ? (
+          <EmptyState line={`Nothing above your ${threshold}% match bar yet.`} actionHref="/settings" actionLabel="Lower the bar in Settings" />
+        ) : (
+          <EmptyState line="Nothing in the global feed matches these filters." />
+        )
       ) : (
         <JobsTable jobs={jobs} tab={tab} sort={sort} dir={dir} />
       )}
@@ -208,10 +215,3 @@ function Shell({ children, ...filters }: { children: React.ReactNode; tab: strin
   );
 }
 
-function Empty({ text }: { text: string }) {
-  return (
-    <div className="surface mt-4 rounded-xl p-12 text-center">
-      <p className="t-muted text-sm">{text}</p>
-    </div>
-  );
-}
