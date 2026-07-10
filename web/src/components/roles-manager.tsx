@@ -65,7 +65,7 @@ export function RolesManager({ initial }: { initial: KW[] }) {
 
   return (
     <div>
-      {err && <p className="mb-3 text-sm text-red-400">{err}</p>}
+      {err && <p className="t-danger mb-3 text-sm">{err}</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Panel title="Tracked roles" subtitle="Filters jobs from your watchlist companies" scope="tracked" group={group} add={add} remove={remove} busy={busy} />
         <Panel title="Global roles" subtitle="Filters discovery across all other companies" scope="global" group={group} add={add} remove={remove} busy={busy} />
@@ -156,7 +156,7 @@ function ChipList({
         {items.map((i) => (
           <span key={i.id} className="chip inline-flex items-center gap-1 text-xs">
             {i.keyword}
-            <button aria-label={`Remove ${i.keyword}`} onClick={() => onRemove(i.id)} className="t-muted hover:text-red-400">
+            <button aria-label={`Remove ${i.keyword}`} onClick={() => onRemove(i.id)} className="t-muted transition-colors duration-150 hover:text-[rgb(var(--danger))]">
               <X size={11} />
             </button>
           </span>
