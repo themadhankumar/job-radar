@@ -102,7 +102,7 @@ export function RefreshButton() {
         title={cooldown > 0 && !active ? `Available in ${Math.ceil(cooldown / 60)}m` : "Sweep all boards for new jobs"}
         onClick={() => setModal(true)}
       >
-        <RefreshCw size={13} className={active ? "animate-spin" : ""} />
+        <RefreshCw size={13} className={active ? "t-accent animate-spin" : ""} />
         {label}
       </button>
       {modal && (
