@@ -209,3 +209,10 @@ export const filterPresets = pgTable(
   },
   (t) => ({ uniq: uniqueIndex("filter_presets_user_name").on(t.userId, t.name) }),
 );
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  tokenHash: text("token_hash").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
