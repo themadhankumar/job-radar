@@ -29,10 +29,20 @@ const config: Config = {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        "sheet-in": {
+          "0%": { transform: "translateY(16px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "radar-ping": "radar-ping 1.8s cubic-bezier(0,0,0.2,1) infinite",
         shimmer: "shimmer 1.6s linear infinite",
+        "sheet-in": "sheet-in 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "fade-in": "fade-in 200ms ease-out both",
       },
     },
   },
