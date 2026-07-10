@@ -35,18 +35,26 @@ function pay(j: JobRow): string | null {
   return j.payPeriod === "hour" ? `${range}/hr` : range;
 }
 
+// Tier thresholds recalibrated 2026-07-10 against real post-rescore distribution
+// (p99=49, p95=40, p90=34) — old 70/50 split left ~99% of jobs muted.
+// TODO: dedupe with web/src/lib/score-tier.ts once score-tier-recalibration merges.
+const SCORE_TIER_HI = 42;
+const SCORE_TIER_MID = 30;
+function getScoreTier(score: number) {
+  return score >= SCORE_TIER_HI ? "score-hi" : score >= SCORE_TIER_MID ? "score-mid" : "score-low";
+}
+
 function ScoreBadge({ score }: { score: number | null }) {
   if (score == null) return <span className="t-muted text-xs">—</span>;
   // Signal tiers: one hue, three intensities — high signal glows, weak signal recedes
-  const tier = score >= 70 ? "score-hi" : score >= 50 ? "score-mid" : "score-low";
-  return <span className={`${tier} text-[13px] tabular-nums`}>{score}%</span>;
+  return <span className={`${getScoreTier(score)} text-[13px] tabular-nums`}>{score}%</span>;
 }
 
 function ScoreDial({ score }: { score: number }) {
   const r = 26;
   const c = 2 * Math.PI * r;
-  const tier = score >= 70 ? "score-hi" : score >= 50 ? "score-mid" : "score-low";
-  const arcOpacity = score >= 70 ? 1 : score >= 50 ? 0.55 : 0.3;
+  const tier = getScoreTier(score);
+  const arcOpacity = score >= SCORE_TIER_HI ? 1 : score >= SCORE_TIER_MID ? 0.55 : 0.3;
   return (
     <div className="relative h-16 w-16 shrink-0" title={`${score}% match`}>
       <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
