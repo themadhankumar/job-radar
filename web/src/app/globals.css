@@ -2,24 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Signal-on-scope token system ─────────────────────────────
-   Cool near-black base; one amber accent that encodes signal
-   strength (match quality). Triplets consumed as rgb(var(--x))
-   or rgb(var(--x) / alpha). Dark is the primary theme. */
+/* ── Ink-and-violet token system (Superhuman-inspired) ────────
+   Deep ink base with a violet cast; one violet accent that
+   encodes signal strength (match quality). Triplets consumed
+   as rgb(var(--x)) or rgb(var(--x) / alpha). Dark is primary. */
 
 :root {
-  --bg: 247 248 250;        /* cool paper */
+  --bg: 248 247 251;        /* cool lavender paper */
   --surface: 255 255 255;
-  --surface-2: 240 243 247; /* raised layer */
-  --border: 224 229 236;
-  --hairline: 20 25 34;     /* always used at low alpha */
-  --text: 20 25 34;
-  --muted: 100 109 128;
-  --accent: 180 83 9;       /* signal amber, darkened for light-mode contrast */
-  --accent-soft: 251 243 226;
+  --surface-2: 242 240 248; /* raised layer */
+  --border: 226 223 236;
+  --hairline: 22 19 34;     /* always used at low alpha */
+  --text: 22 19 34;
+  --muted: 106 102 126;
+  --accent: 91 75 214;      /* violet, darkened for light-mode contrast */
+  --accent-soft: 236 232 255;
   --ok: 5 150 105;
   --danger: 225 29 72;
-  --glow: 180 83 9;
+  --glow: 91 75 214;
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --t-fast: 150ms;
@@ -28,18 +28,18 @@
 }
 
 .dark {
-  --bg: 10 13 18;           /* scope black */
-  --surface: 16 20 27;
-  --surface-2: 22 28 37;
-  --border: 35 43 56;
-  --hairline: 148 163 184;
-  --text: 232 237 244;
-  --muted: 139 148 167;
-  --accent: 255 178 36;     /* signal amber */
-  --accent-soft: 45 36 20;
+  --bg: 12 10 20;           /* ink, violet cast */
+  --surface: 19 16 32;
+  --surface-2: 26 23 48;
+  --border: 42 38 69;
+  --hairline: 165 160 200;
+  --text: 234 232 244;
+  --muted: 145 141 169;
+  --accent: 139 124 255;    /* signal violet */
+  --accent-soft: 39 33 78;
   --ok: 52 211 153;
   --danger: 251 113 133;
-  --glow: 255 178 36;
+  --glow: 139 124 255;
 }
 
 body {
@@ -48,7 +48,7 @@ body {
   font-feature-settings: "cv11", "ss01";
 }
 .dark body {
-  /* faint phosphor bloom at the top of the scope */
+  /* faint violet bloom at the top of the ink */
   background-image: radial-gradient(1100px 620px at 50% -12%, rgb(var(--glow) / 0.045), transparent 70%);
   background-attachment: fixed;
 }
@@ -71,7 +71,7 @@ body {
   .t-danger { @apply text-[rgb(var(--danger))]; }
 
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[background-color,border-color,color,box-shadow,opacity,filter] duration-200 ease-[var(--ease)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--accent))] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--bg))] disabled:opacity-50 disabled:pointer-events-none h-9 px-4; }
-  .btn-primary { @apply btn bg-[rgb(var(--accent))] text-white hover:brightness-105 hover:shadow-[0_0_20px_rgb(var(--glow)/0.35)] dark:text-[#0A0D12]; }
+  .btn-primary { @apply btn bg-[rgb(var(--accent))] text-white hover:brightness-105 hover:shadow-[0_0_20px_rgb(var(--glow)/0.35)]; }
   .btn-ghost { @apply btn border border-[rgb(var(--border))] bg-transparent hover:bg-[rgb(var(--surface-2))] hover:border-[rgb(var(--muted)/0.4)]; }
 
   .input { @apply flex h-9 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 text-sm placeholder:text-[rgb(var(--muted))] transition-[border-color,box-shadow] duration-200 ease-[var(--ease)] focus-visible:outline-none focus-visible:border-[rgb(var(--accent)/0.6)] focus-visible:shadow-[0_0_0_1px_rgb(var(--accent)/0.4),0_0_18px_rgb(var(--glow)/0.15)]; }

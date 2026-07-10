@@ -7,10 +7,10 @@ const config: Config = {
     extend: {
       colors: {
         accent: {
-          DEFAULT: "#FFB224", // signal amber (dark theme value; CSS vars are the source of truth)
-          hover: "#E89A0C",
-          soft: "#2D2414",
-          dark: "#FFB224",
+          DEFAULT: "#8B7CFF", // signal violet (dark theme value; CSS vars are the source of truth)
+          hover: "#7A69F5",
+          soft: "#241D45",
+          dark: "#8B7CFF",
         },
       },
       fontFamily: {
