@@ -37,13 +37,9 @@ function pay(j: JobRow): string | null {
 
 function ScoreBadge({ score }: { score: number | null }) {
   if (score == null) return <span className="t-muted text-xs">—</span>;
-  const tone =
-    score >= 70
-      ? "text-emerald-500 border-emerald-500/60"
-      : score >= 50
-        ? "text-amber-500 border-amber-500/60"
-        : "opacity-60";
-  return <span className={`chip font-mono ${tone}`}>{score}%</span>;
+  // Signal tiers: one hue, three intensities — high signal glows, weak signal recedes
+  const tier = score >= 70 ? "score-hi" : score >= 50 ? "score-mid" : "score-low";
+  return <span className={`${tier} text-[13px] tabular-nums`}>{score}%</span>;
 }
 
 const COMPONENT_META: { key: keyof Omit<MatchComponents, "missing">; label: string; weight: number }[] = [
@@ -145,7 +141,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
 
   return (
     <>
-      <div className="surface overflow-x-auto rounded-xl">
+      <div className="overflow-x-auto">
         <table className="w-full table-fixed text-sm">
           <colgroup>
             <col className="w-[7%]" /><col className="w-[31%]" /><col className="w-[15%]" /><col className="w-[8%]" />
@@ -162,7 +158,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                     onClick={() => onSort(h)}
                     title={col ? `Sort by ${h.toLowerCase()}` : undefined}
                     aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined}
-                    className={`t-muted px-3 py-2.5 text-xs font-medium uppercase tracking-wide ${col ? "cursor-pointer select-none hover:text-[rgb(var(--accent))]" : ""} ${active ? "t-accent" : ""}`}>
+                    className={`t-muted px-3 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] ${col ? "cursor-pointer select-none transition-colors duration-150 hover:text-[rgb(var(--accent))]" : ""} ${active ? "t-accent" : ""}`}>
                     <span className="inline-flex items-center gap-1">
                       {h}
                       {active && (dir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />)}
@@ -178,8 +174,8 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
               const st = statuses[j.id] ?? j.status;
               return (
                 <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); }}
-                  className="cursor-pointer border-b border-[rgb(var(--border))] last:border-0 hover:bg-[rgb(var(--border))]/30">
-                  <td className="px-3 py-3"><ScoreBadge score={j.score} /></td>
+                  className="group cursor-pointer border-b border-[rgb(var(--hairline)/0.10)] transition-colors duration-150 last:border-0 hover:bg-[rgb(var(--surface))]">
+                  <td className="px-3 py-3 transition-shadow duration-150 group-hover:shadow-[inset_2px_0_0_rgb(var(--accent))]"><ScoreBadge score={j.score} /></td>
                   <td className="px-3 py-3 font-medium">
                     <span className="flex items-center">
                       {isFresh(j.createdAt) && st === "new" && <NewDot />}
@@ -194,14 +190,14 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                   <td className="t-muted truncate px-3 py-3">{ago(j.postedAt)}</td>
                   <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                     <select value={st} onChange={(e) => setStatus(j.id, e.target.value)}
-                      className="rounded-md border border-[rgb(var(--border))] bg-transparent px-2 py-1 text-xs">
+                      className="t-muted rounded-full border border-transparent bg-[rgb(var(--surface-2))] px-2.5 py-1 text-xs transition-colors duration-150 hover:border-[rgb(var(--border))] hover:text-[rgb(var(--text))]">
                       {STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
                     </select>
                   </td>
                   {radarTab === "suggested" && (
                     <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
                       <button aria-label="Don't suggest this job again" title="Don't suggest again"
-                        onClick={() => dismiss(j.id)} className="t-muted hover:text-red-400">
+                        onClick={() => dismiss(j.id)} className="t-muted transition-colors duration-150 hover:text-[rgb(var(--danger))]">
                         <X size={14} />
                       </button>
                     </td>

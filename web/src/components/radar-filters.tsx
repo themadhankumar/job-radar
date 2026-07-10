@@ -99,10 +99,10 @@ export function RadarFilters({ tab, q, days, status }: { tab: string; q: string;
   return (
     <div className="mb-4 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="surface flex rounded-md p-0.5">
+        <div className="flex rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-0.5">
           {(["tracked", "suggested", "global"] as const).map((t) => (
             <button key={t} onClick={() => setParam("tab", t === "tracked" ? "" : t)}
-              className={`rounded px-3 py-1.5 text-sm font-medium capitalize ${tab === t ? "bg-[rgb(var(--accent))] text-white dark:text-zinc-900" : "t-muted"}`}>
+              className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-colors duration-200 ${tab === t ? "bg-[rgb(var(--surface-2))] text-[rgb(var(--accent))]" : "t-muted hover:text-[rgb(var(--text))]"}`}>
               {t}
             </button>
           ))}
@@ -137,9 +137,9 @@ export function RadarFilters({ tab, q, days, status }: { tab: string; q: string;
           <span className="t-muted text-xs">Presets:</span>
           {presets.map((p) => (
             <span key={p.id}
-              className={`chip inline-flex cursor-pointer items-center gap-1 text-xs ${isActive(p) ? "t-accent border-[rgb(var(--accent))]" : ""}`}>
+              className={`chip inline-flex cursor-pointer items-center gap-1 text-xs transition-colors duration-150 ${isActive(p) ? "t-accent border-[rgb(var(--accent))] bg-[rgb(var(--accent-soft))]" : "hover:border-[rgb(var(--muted)/0.4)]"}`}>
               <button onClick={() => applyPreset(p)}>{p.name}</button>
-              <button aria-label={`Delete preset ${p.name}`} onClick={() => deletePreset(p.id)} className="t-muted hover:text-red-400">
+              <button aria-label={`Delete preset ${p.name}`} onClick={() => deletePreset(p.id)} className="t-muted transition-colors duration-150 hover:text-[rgb(var(--danger))]">
                 <X size={11} />
               </button>
             </span>
