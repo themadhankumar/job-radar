@@ -225,14 +225,14 @@ export default function Onboarding() {
                 <span className="t-muted block text-sm">Your radar will surface each employer&apos;s sponsorship track record.</span>
               </span>
             </label>
-            {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+            {error && <p className="mt-3 t-danger text-sm">{error}</p>}
             <div className="mt-6 flex justify-between">
               <button className="btn-ghost" onClick={() => setStep(2)}>Back</button>
               <button className="btn-primary" disabled={busy} onClick={finish}>{busy ? "Setting up…" : "Open my radar"}</button>
             </div>
           </section>
         )}
-        {error && step !== 3 && <p className="mt-3 text-sm text-red-500">{error}</p>}
+        {error && step !== 3 && <p className="mt-3 t-danger text-sm">{error}</p>}
       </div>
     </div>
   );
