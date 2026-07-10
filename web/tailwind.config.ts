@@ -29,10 +29,16 @@ const config: Config = {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        "tick-in": {
+          "0%": { transform: "scale(0.4)", opacity: "0" },
+          "60%": { transform: "scale(1.15)" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
       animation: {
         "radar-ping": "radar-ping 1.8s cubic-bezier(0,0,0.2,1) infinite",
         shimmer: "shimmer 1.6s linear infinite",
+        "tick-in": "tick-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
       },
     },
   },
