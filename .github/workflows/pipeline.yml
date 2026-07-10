@@ -2,8 +2,7 @@ name: radar-pipeline
 
 on:
   schedule:
-    - cron: "30 13 * * *"   # ~8:30 AM Central — morning fetch
-    - cron: "0 22 * * *"    # ~5 PM Central — pre-digest fetch
+    - cron: "0 */2 * * *"   # every 2 hours — fast signal; requires public repo (unlimited Actions minutes)
   workflow_dispatch: {}
 
 # One pipeline at a time; a second trigger queues instead of overlapping.
