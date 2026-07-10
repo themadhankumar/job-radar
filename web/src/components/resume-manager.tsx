@@ -95,7 +95,7 @@ export function ResumeManager() {
           </button>
         )}
         {resume && showText && (
-          <pre className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded-lg bg-black/20 p-3 text-xs leading-relaxed">
+          <pre className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[rgb(var(--hairline)/0.10)] bg-[rgb(var(--surface-2))] p-3 text-xs leading-relaxed">
             {resume.preview}{resume.chars > resume.preview.length ? "\n…" : ""}
           </pre>
         )}
