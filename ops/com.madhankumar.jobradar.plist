@@ -5,16 +5,19 @@
 <dict>
     <key>Label</key>
     <string>com.madhankumar.jobradar</string>
-    <!-- Local LinkedIn-inclusive fetch. Runs the FULL pipeline (ATS + LinkedIn)
-         from your Mac's residential IP, since LinkedIn blocks datacenter IPs and
-         GitHub Actions skips LinkedIn. Writes to the same Neon database.
-         Requires ~/Documents/GitHub/job-radar/pipeline/.env with DATABASE_URL,
-         ENCRYPTION_KEY, and ANTHROPIC_API_KEY (see ops/README.md). -->
+    <!-- Local LinkedIn-inclusive fetch from the Mac's residential IP (LinkedIn
+         blocks datacenter IPs; GitHub Actions runs with --no-linkedin).
+         Runs from ~/jobradar-runner, a mirror clone OUTSIDE ~/Documents:
+         macOS TCC denies launchd jobs access to Documents/Desktop/Downloads,
+         which is why the previous location failed with PermissionError on
+         pyvenv.cfg. git pull keeps the mirror current before every run.
+         Requires ~/jobradar-runner/pipeline/.env with DATABASE_URL,
+         ENCRYPTION_KEY, and ANTHROPIC_API_KEY. -->
     <key>ProgramArguments</key>
     <array>
         <string>/bin/zsh</string>
-        <string>-lc</string>
-        <string>cd $HOME/Documents/GitHub/job-radar/pipeline &amp;&amp; $HOME/Documents/GitHub/job-radar/pipeline/.venv/bin/python main.py --no-notion &gt;&gt; /tmp/jobradar.log 2&gt;&amp;1</string>
+        <string>-c</string>
+        <string>cd $HOME/jobradar-runner &amp;&amp; git pull -q origin main; cd pipeline &amp;&amp; .venv/bin/python main.py --no-notion &gt;&gt; /tmp/jobradar.log 2&gt;&amp;1</string>
     </array>
     <!-- Twice daily (local time), interleaved with the Actions runs. -->
     <key>StartCalendarInterval</key>
