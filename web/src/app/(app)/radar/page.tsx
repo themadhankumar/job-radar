@@ -5,6 +5,7 @@ import { JobsTable, type JobRow } from "@/components/jobs-table";
 import { RadarFilters } from "@/components/radar-filters";
 import { RefreshButton } from "@/components/refresh-button";
 import { EmptyState } from "@/components/empty-state";
+import { AddByUrl } from "@/components/add-by-url";
 
 export const dynamic = "force-dynamic";
 
@@ -64,26 +65,23 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   const conds: SQL[] = [];
   if (user.usOnly) conds.push(sql`${schema.jobs.country} <> 'intl'`);
   if (tab === "tracked") {
-    if (myCompanies.length === 0) {
-      return (
-        <Shell tab={tab} q={q} days={days} status={statusFilter}>
-          <EmptyState line="Your watchlist is empty — nothing on the scope yet." actionHref="/companies" actionLabel="Add companies to watch" />
-        </Shell>
-      );
-    }
-    const ids = myCompanies.map((c) => c.id);
-    const names = myCompanies.map((c) => c.name.toLowerCase());
-    conds.push(
-      or(
+    // Watchlist jobs (filtered by keywords) OR jobs this user added by URL —
+    // manual adds are pinned here regardless of watchlist/keywords, otherwise
+    // they'd be invisible in every tab until scored.
+    const manualCond = sql`(${schema.jobs.source} = 'manual' AND ujs.status IS NOT NULL)`;
+    let watchCond: SQL | null = null;
+    if (myCompanies.length > 0) {
+      const ids = myCompanies.map((c) => c.id);
+      const names = myCompanies.map((c) => c.name.toLowerCase());
+      watchCond = or(
         inArray(schema.jobs.companyId, ids),
         inArray(sql`lower(${schema.jobs.companyName})`, names),
-      )!,
-    );
-  }
-  if (include.length > 0 && tab === "tracked") {
-    conds.push(
-      or(...include.map((k) => sql`(${schema.jobs.title} ILIKE ${"%" + k + "%"} OR ${schema.jobs.description} ILIKE ${"%" + k + "%"})`))!,
-    );
+      )!;
+      if (include.length > 0) {
+        watchCond = sql`(${watchCond} AND ${or(...include.map((k) => sql`(${schema.jobs.title} ILIKE ${"%" + k + "%"} OR ${schema.jobs.description} ILIKE ${"%" + k + "%"})`))})`;
+      }
+    }
+    conds.push(watchCond ? sql`(${watchCond} OR ${manualCond})` : manualCond);
   }
   if (include.length > 0 && tab === "global") {
     conds.push(or(...include.map((k) => sql`${schema.jobs.title} ILIKE ${"%" + k + "%"}`))!);
@@ -101,6 +99,8 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   if (tab === "global") {
     // Keep the three tabs disjoint: Global excludes watchlist companies (they
     // live in Tracked) and anything that clears the Suggested bar (score >= the user's threshold).
+    // Manual adds this user pinned live in Tracked, not here.
+    conds.push(sql`NOT (${schema.jobs.source} = 'manual' AND ujs.status IS NOT NULL)`);
     if (myCompanies.length > 0) {
       const ids = myCompanies.map((c) => c.id);
       const names = myCompanies.map((c) => c.name.toLowerCase());
@@ -188,7 +188,11 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     <Shell tab={tab} q={q} days={days} status={statusFilter}>
       {jobs.length === 0 ? (
         tab === "tracked" ? (
-          <EmptyState line="No matches from your watchlist yet — the radar sweeps on schedule." actionHref="/roles" actionLabel="Broaden your roles" />
+          myCompanies.length === 0 ? (
+            <EmptyState line="Your watchlist is empty — nothing on the scope yet." actionHref="/companies" actionLabel="Add companies to watch" />
+          ) : (
+            <EmptyState line="No matches from your watchlist yet — the radar sweeps on schedule." actionHref="/roles" actionLabel="Broaden your roles" />
+          )
         ) : tab === "suggested" ? (
           <EmptyState line={`Nothing above your ${threshold}% match bar yet.`} actionHref="/settings" actionLabel="Lower the bar in Settings" />
         ) : (
@@ -206,7 +210,10 @@ function Shell({ children, ...filters }: { children: React.ReactNode; tab: strin
     <div className="mx-auto max-w-7xl p-4 sm:p-8">
       <div className="mb-1 flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Radar</h1>
-        <RefreshButton />
+        <div className="flex items-center gap-2">
+          <AddByUrl />
+          <RefreshButton />
+        </div>
       </div>
       <p className="t-muted mb-6 text-sm">Open roles across your watchlist, newest signal first.</p>
       <RadarFilters {...filters} />
