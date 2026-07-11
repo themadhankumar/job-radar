@@ -3,12 +3,20 @@ import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { sendEmail, emailConfigured } from "@/lib/email";
+import { rateLimit, clientIp, RATE_LIMITED } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const email = String(body.email ?? "").toLowerCase().trim();
   if (!email) {
     return NextResponse.json({ error: "Enter your email." }, { status: 400 });
+  }
+  const [emailOk, ipOk] = await Promise.all([
+    rateLimit(`forgot:${email}`, 3, 3600),
+    rateLimit(`forgot-ip:${clientIp(req)}`, 10, 3600),
+  ]);
+  if (!emailOk || !ipOk) {
+    return NextResponse.json(RATE_LIMITED, { status: 429 });
   }
   if (!emailConfigured()) {
     return NextResponse.json(

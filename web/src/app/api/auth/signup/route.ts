@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { createSession } from "@/lib/auth";
 import { authErrorResponse } from "@/lib/api-errors";
+import { rateLimit, clientIp, RATE_LIMITED } from "@/lib/rate-limit";
 
 const Body = z.object({
   name: z.string().min(1).max(80),
@@ -12,6 +13,9 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
+  if (!(await rateLimit(`signup:${clientIp(req)}`, 5, 3600))) {
+    return NextResponse.json(RATE_LIMITED, { status: 429 });
+  }
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Check your name, email, and password (8+ characters)." }, { status: 400 });

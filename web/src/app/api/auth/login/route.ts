@@ -4,11 +4,15 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { createSession } from "@/lib/auth";
 import { authErrorResponse } from "@/lib/api-errors";
+import { rateLimit, clientIp, RATE_LIMITED } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const email = String(body.email ?? "").toLowerCase();
   const password = String(body.password ?? "");
+  if (!(await rateLimit(`login:${clientIp(req)}:${email}`, 10, 900))) {
+    return NextResponse.json(RATE_LIMITED, { status: 429 });
+  }
   try {
     const [user] = await db.select().from(schema.users).where(eq(schema.users.email, email));
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
