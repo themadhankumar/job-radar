@@ -10,7 +10,7 @@ export default async function SettingsPage() {
   const user = (await getSessionUser())!;
   const usage = await getUsage(user.id);
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-8">
+    <div className="mx-auto max-w-2xl">
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">Settings</h1>
       <p className="t-muted mb-6 text-sm">Signed in as {user.email}</p>
       <SettingsForm

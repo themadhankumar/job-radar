@@ -61,7 +61,7 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-4 sm:p-8">
+    <div className="mx-auto max-w-3xl">
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">Companies</h1>
       <p className="t-muted mb-6 text-sm">Your watchlist drives what the radar fetches. Add anything — the job board is detected automatically.</p>
 
