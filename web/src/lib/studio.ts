@@ -189,3 +189,19 @@ export function studioSystemPrompt(job: {
 
 export const GAP_ANALYSIS_PROMPT =
   "Give me a gap analysis for this job: 1) overall fit in one sentence with a rough percentage, 2) my strongest matching points, 3) what's missing or weak, 4) the 3–5 things my resume should highlight or reword for this specific posting. Keep it tight.";
+
+/** Draft answers for the recurring application-form screener questions. */
+export function screenerPackPrompt(needsSponsorship: boolean): string {
+  return [
+    "Draft copy-pasteable answers for the screener questions this application will almost certainly ask. For each, give a tight, first-person answer grounded in my actual resume — never invent experience. Format as short labeled sections I can paste one at a time:",
+    "1) Why " + "this company (2–3 sentences, specific to what they do)",
+    "2) Why this role / why me (2–3 sentences)",
+    "3) Work authorization / sponsorship: " + (needsSponsorship
+      ? "I will require visa sponsorship now or in the future — phrase this truthfully but confidently and matter-of-factly (use any authorization details my resume mentions); give me one short version and one longer version."
+      : "I am authorized to work without sponsorship — one short truthful phrasing."),
+    "4) Salary expectation: if the posting shows a pay range, anchor to it; otherwise give me a sensible range for this title/location and a deflection phrasing for when a number is required.",
+    "5) Availability / start date: a standard two-weeks phrasing.",
+    "6) A 2–3 sentence 'describe your relevant experience' blurb tailored to this posting.",
+    "Keep the whole thing scannable — no preamble.",
+  ].join("\n");
+}
