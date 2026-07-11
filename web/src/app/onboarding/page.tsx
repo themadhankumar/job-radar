@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
+import { ProductTour } from "@/components/product-tour";
 
 type Suggested = { id: number; name: string; ats: string };
 type Picked = { id?: number; name: string; ats?: string; slug?: string; list: "dream" | "watch" };
@@ -81,6 +82,8 @@ export default function Onboarding() {
     setCompanyInput("");
   }
 
+  const [tour, setTour] = useState(false);
+
   async function finish() {
     setBusy(true);
     setError("");
@@ -94,11 +97,18 @@ export default function Onboarding() {
       setError((await res.json()).error ?? "Could not save. Try again.");
       return;
     }
-    router.push("/radar");
-    router.refresh();
+    setTour(true);
   }
 
   const steps = ["Resume", "Roles", "Companies", "Details"];
+
+  if (tour) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <ProductTour onDone={() => { router.push("/radar"); router.refresh(); }} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">

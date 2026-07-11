@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -74,6 +75,9 @@ export function SettingsForm(props: {
       <section className="surface rounded-xl p-5">
         <h2 className="mb-1 text-sm font-semibold">Preferences</h2>
         <div>
+          <Row label="Product tour" hint="A quick walkthrough of what the radar, Studio, and referrals actually do.">
+            <Link href="/tour" className="btn-ghost text-xs">Replay tour</Link>
+          </Row>
           <Row label="Daily email digest at 6 PM" hint="New matches from the last 24 hours, delivered once a day.">
             <Switch checked={digest} onChange={(v) => { setDigest(v); save({ digestEnabled: v }, "Digest preference"); }} />
           </Row>
