@@ -45,7 +45,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     .orderBy(asc(schema.resumeMessages.createdAt), asc(schema.resumeMessages.id));
   const discussion = history
     .slice(-8)
-    .map((m) => `${m.role}: ${m.content === "__gap_analysis__" ? "(requested gap analysis)" : m.content}`)
+    .map((m) => `${m.role}: ${m.content === "__gap_analysis__" ? "(requested gap analysis)" : m.content === "__screener_pack__" ? "(requested screener answers)" : m.content}`)
     .join("\n")
     .slice(0, 6000);
 

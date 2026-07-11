@@ -7,6 +7,7 @@ import {
   checkCap,
   recordUsage,
   resolveKey,
+  screenerPackPrompt,
   streamAnthropic,
   studioSystemPrompt,
   type ChatMsg,
@@ -36,8 +37,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const body = await req.json().catch(() => ({}));
   const bootstrap = body.bootstrap === true;
+  const screener = body.screener === true;
   const content = typeof body.content === "string" ? body.content.trim() : "";
-  if (!bootstrap && (!content || content.length > 8000)) {
+  if (!bootstrap && !screener && (!content || content.length > 8000)) {
     return NextResponse.json({ error: "Message must be 1–8000 characters." }, { status: 400 });
   }
 
@@ -60,7 +62,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Thread already started." }, { status: 409 });
   }
 
-  const userTurn = bootstrap ? GAP_ANALYSIS_PROMPT : content;
+  const userTurn = bootstrap ? GAP_ANALYSIS_PROMPT : screener ? screenerPackPrompt(user.needsSponsorship) : content;
   const messages: ChatMsg[] = [
     ...history.map((m) => ({ role: m.role, content: m.content }) as ChatMsg),
     { role: "user", content: userTurn },
@@ -85,7 +87,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         });
         // Persist the user turn (hidden label for bootstrap) and the reply, then usage.
         await db.insert(schema.resumeMessages).values([
-          { threadId, role: "user", content: bootstrap ? "__gap_analysis__" : userTurn, tokensIn: 0, tokensOut: 0 },
+          { threadId, role: "user", content: bootstrap ? "__gap_analysis__" : screener ? "__screener_pack__" : userTurn, tokensIn: 0, tokensOut: 0 },
           { threadId, role: "assistant", content: result.text, tokensIn: result.tokensIn, tokensOut: result.tokensOut },
         ]);
         await recordUsage(user.id, result.tokensIn, result.tokensOut);
@@ -97,7 +99,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           await db
             .insert(schema.resumeMessages)
             .values([
-              { threadId, role: "user", content: bootstrap ? "__gap_analysis__" : userTurn, tokensIn: 0, tokensOut: 0 },
+              { threadId, role: "user", content: bootstrap ? "__gap_analysis__" : screener ? "__screener_pack__" : userTurn, tokensIn: 0, tokensOut: 0 },
               { threadId, role: "assistant", content: acc + "\n\n_[reply was cut off — ask me to continue]_", tokensIn: 0, tokensOut: estOut },
             ])
             .catch(() => {});

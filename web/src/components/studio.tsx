@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, Send, Sparkles } from "lucide-react";
+import { Download, Send, Sparkles, ListChecks } from "lucide-react";
 
 type Msg = { id?: number; role: "user" | "assistant"; content: string };
 type ThreadInfo = {
@@ -12,6 +12,7 @@ type ThreadInfo = {
 };
 
 const GAP_LABEL = "__gap_analysis__";
+const SCREENER_LABEL = "__screener_pack__";
 
 function exportHint(kind: string, hasOriginal: boolean): string {
   if (kind === "tex" && hasOriginal) return "Exports a tailored .tex — recompile for a pixel-perfect PDF.";
@@ -97,7 +98,7 @@ export function Studio({ jobId }: { jobId: number }) {
       }
       const t = data as ThreadInfo;
       setThread(t);
-      setMsgs(t.messages.filter((m) => m.content !== GAP_LABEL));
+      setMsgs(t.messages.filter((m) => m.content !== GAP_LABEL && m.content !== SCREENER_LABEL));
       setThreadTokens({
         in: t.messages.reduce((s, m) => s + m.tokensIn, 0),
         out: t.messages.reduce((s, m) => s + m.tokensOut, 0),
@@ -119,6 +120,13 @@ export function Studio({ jobId }: { jobId: number }) {
     setError(null);
     setMsgs((m) => [...m, { role: "user", content: text }]);
     await streamTurn(thread.threadId, { content: text });
+  }
+
+  async function screenerPack() {
+    if (!thread || streaming) return;
+    setError(null);
+    setMsgs((m) => [...m, { role: "user", content: "Draft screener answers for this application" }]);
+    await streamTurn(thread.threadId, { screener: true });
   }
 
   async function exportResume() {
@@ -180,10 +188,16 @@ export function Studio({ jobId }: { jobId: number }) {
           <span className="t-muted text-xs" title="Tokens used in this thread (Opus 4.8)">
             {threadTokens.in.toLocaleString()} in · {threadTokens.out.toLocaleString()} out
           </span>
-          <button onClick={exportResume} disabled={exporting || streaming} className="btn-ghost text-xs"
-            title={exportHint(thread.resumeKind, thread.hasOriginal)}>
-            <Download size={13} /> {exporting ? "Tailoring…" : `Export tailored ${thread.resumeKind === "tex" && thread.hasOriginal ? ".tex" : ".docx"}`}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={screenerPack} disabled={streaming} className="btn-ghost text-xs"
+              title="Draft answers for the recurring application questions — why-company, sponsorship, salary, availability">
+              <ListChecks size={13} /> Screener answers
+            </button>
+            <button onClick={exportResume} disabled={exporting || streaming} className="btn-ghost text-xs"
+              title={exportHint(thread.resumeKind, thread.hasOriginal)}>
+              <Download size={13} /> {exporting ? "Tailoring…" : `Export tailored ${thread.resumeKind === "tex" && thread.hasOriginal ? ".tex" : ".docx"}`}
+            </button>
+          </div>
         </div>
         <div className="flex gap-2">
           <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={2}
