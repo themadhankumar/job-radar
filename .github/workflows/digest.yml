@@ -2,7 +2,11 @@ name: daily-digest
 
 on:
   schedule:
-    - cron: "0 23 * * *"    # 6 PM Central during daylight time (5 PM in winter)
+    # GitHub cron is UTC-only, so 6 PM Central needs two triggers plus a
+    # local-time gate: 23:00 UTC = 6 PM CDT (summer), 00:00 UTC = 6 PM CST
+    # (winter). The gate step lets exactly one of them proceed per day.
+    - cron: "0 23 * * *"
+    - cron: "0 0 * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -10,14 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Gate on 6 PM America/Chicago (manual runs always pass)
+        id: gate
+        run: |
+          HOUR=$(TZ=America/Chicago date +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$HOUR" = "18" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Skipping: Central hour is $HOUR, not 18 (the other cron will match)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: pipeline/requirements.txt
       - run: pip install -r pipeline/requirements.txt
+        if: steps.gate.outputs.run == 'true'
       - name: Send digests
+        if: steps.gate.outputs.run == 'true'
         working-directory: pipeline
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
