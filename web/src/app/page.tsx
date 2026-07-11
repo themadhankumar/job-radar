@@ -155,19 +155,6 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* Stance */}
-      <section className="mx-auto max-w-5xl px-6 pt-32">
-        <div className="max-w-2xl border-l-2 border-[rgb(var(--accent))] pl-6">
-          <h2 className="text-2xl font-semibold tracking-tight">We don&apos;t auto-apply.</h2>
-          <p className="t-muted mt-4 text-sm leading-relaxed">
-            Tools that fire five hundred applications a week are why hiring is drowning in noise.
-            Job Radar stops at signal and materials: it finds the right postings, proves the fit,
-            and prepares your strongest version. The send button stays yours — because the
-            application with your name on it should have your judgment in it.
-          </p>
-        </div>
-      </section>
-
       {/* Closing CTA band */}
       <section className="mx-auto mt-32 max-w-5xl px-6">
         <div className="surface overflow-hidden rounded-2xl px-8 py-16 text-center">
