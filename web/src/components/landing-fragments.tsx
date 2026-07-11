@@ -104,7 +104,7 @@ export function MatchFragment() {
           <div key={label} className="flex items-center gap-3">
             <span className="t-muted w-20 text-[11px]">{label}</span>
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
-              <div className="h-full rounded-full bg-[rgb(var(--accent))] transition-[width] duration-700 ease-[var(--ease)]"
+              <div className="h-full rounded-full bg-[rgb(var(--muted)/0.7)] transition-[width] duration-700 ease-[var(--ease)]"
                 style={{ width: on ? `${v}%` : "0%", transitionDelay: `${i * 90}ms` }} />
             </div>
             <span className="font-data t-muted w-7 text-right text-[11px]">{v}</span>
@@ -136,6 +136,82 @@ export function StudioFragment() {
         <p className="rounded-sm bg-[rgb(var(--danger)/0.08)] px-1 text-[rgb(var(--danger))] opacity-70">− Managed data annotation workflows</p>
         <p className="rounded-sm bg-[rgb(var(--ok)/0.10)] px-1 text-[rgb(var(--ok))]">+ Built the clinical annotation engine scoring 40k charts/mo</p>
         <p className="rounded-sm bg-[rgb(var(--ok)/0.10)] px-1 text-[rgb(var(--ok))]">+ Cut specialist review time 38% via HITL routing</p>
+      </div>
+    </div>
+  );
+}
+
+/* H-1B sponsor fragment: the signal no competitor has. */
+export function SponsorFragment() {
+  return (
+    <div className="surface rounded-xl p-5">
+      <div className="mb-3 flex items-center justify-between border-b border-[rgb(var(--hairline)/0.10)] pb-3">
+        <div>
+          <p className="text-sm font-semibold">AI Data Product Manager</p>
+          <p className="t-muted text-xs">Scale AI · New York, NY</p>
+        </div>
+        <span className="font-data score-hi text-sm">46%</span>
+      </div>
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="t-muted">Sponsors H-1B</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--ok)/0.3)] px-2 py-0.5 text-[rgb(var(--ok))]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--ok))]" /> Yes
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="t-muted">Approvals (last 3 FY)</span>
+          <span className="font-data">1,204</span>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="t-muted">Most recent</span>
+          <span className="font-data">FY2025</span>
+        </div>
+      </div>
+      <p className="t-muted mt-3 border-t border-[rgb(var(--hairline)/0.10)] pt-3 text-[11px] leading-relaxed">
+        Pulled from USCIS petition data — inline on every job, before you spend an hour applying.
+      </p>
+    </div>
+  );
+}
+
+/* Add-by-URL fragment: paste → parsed. */
+export function AddUrlFragment() {
+  return (
+    <div className="surface rounded-xl p-5">
+      <p className="t-muted mb-2 text-[11px] uppercase tracking-widest">Add a job by URL</p>
+      <div className="input flex items-center text-xs">
+        <span className="truncate font-data t-muted">linkedin.com/jobs/view/tpm-anthropic…</span>
+      </div>
+      <div className="mt-3 flex items-center gap-2 text-xs">
+        <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--ok))]" />
+        <span className="t-muted">Parsed · scored · <span className="score-hi font-data">54%</span> · ready in Studio</span>
+      </div>
+    </div>
+  );
+}
+
+/* Digest fragment: the 6 PM email. */
+const DIGEST = [
+  ["61%", "TPM, Enterprise", "Anthropic"],
+  ["57%", "Senior TPM, Robotics", "Figure"],
+  ["54%", "PM, Core Models", "OpenAI"],
+];
+export function DigestFragment() {
+  return (
+    <div className="surface overflow-hidden rounded-xl">
+      <div className="border-b border-[rgb(var(--hairline)/0.10)] px-4 py-3">
+        <p className="text-sm font-semibold">3 new roles on your radar</p>
+        <p className="t-muted text-xs">Today · 6:00 PM · ranked by match</p>
+      </div>
+      <div>
+        {DIGEST.map(([score, role, co]) => (
+          <div key={role} className="flex items-center gap-3 border-b border-[rgb(var(--hairline)/0.08)] px-4 py-2.5 text-[13px] last:border-0">
+            <span className="font-data score-hi w-10 text-xs">{score}</span>
+            <span className="flex-1 truncate font-medium">{role}</span>
+            <span className="t-muted text-xs">{co}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
