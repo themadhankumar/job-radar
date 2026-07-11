@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, ExternalLink, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
 import { htmlToText } from "@/lib/text";
+import { getScoreTier } from "@/lib/score-tier";
 import type { MatchComponents } from "@/db/schema";
 
 export type JobRow = {
@@ -38,8 +39,7 @@ function pay(j: JobRow): string | null {
 function ScoreBadge({ score }: { score: number | null }) {
   if (score == null) return <span className="t-muted text-xs">—</span>;
   // Signal tiers: one hue, three intensities — high signal glows, weak signal recedes
-  const tier = score >= 70 ? "score-hi" : score >= 50 ? "score-mid" : "score-low";
-  return <span className={`${tier} text-[13px] tabular-nums`}>{score}%</span>;
+  return <span className={`${getScoreTier(score)} text-[13px] tabular-nums`}>{score}%</span>;
 }
 
 const COMPONENT_META: { key: keyof Omit<MatchComponents, "missing">; label: string; weight: number }[] = [

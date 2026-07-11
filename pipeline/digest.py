@@ -25,6 +25,11 @@ import requests
 import db as dbm
 from output import console
 
+# Keep in sync with web/src/lib/score-tier.ts (recalibrated 2026-07-10
+# against real post-rescore distribution: p99=49, p97=43, p95=40, p90=34).
+SCORE_TIER_HI = 42
+SCORE_TIER_MID = 30
+
 
 def render_email(name: str, jobs: list[dict], app_url: str) -> str:
     rows = []
@@ -33,7 +38,7 @@ def render_email(name: str, jobs: list[dict], app_url: str) -> str:
         score = j.get("score")
         badge = (
             f'<span style="float:right;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;'
-            f'color:{"#059669" if score >= 70 else "#b45309" if score >= 50 else "#71717a"};'
+            f'color:{"#059669" if score >= SCORE_TIER_HI else "#b45309" if score >= SCORE_TIER_MID else "#71717a"};'
             f'border:1px solid currentColor;">{round(score)}%</span>'
         ) if score is not None else ""
         rows.append(
