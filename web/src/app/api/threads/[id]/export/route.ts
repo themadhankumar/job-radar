@@ -74,13 +74,14 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       await recordUsage(user.id, result.tokensIn, result.tokensOut);
       const tex = result.text.trim().replace(/^```(?:latex|tex)?/i, "").replace(/```$/, "").trim();
       if (!tex.includes("\\documentclass")) throw new Error("model did not return latex");
-      return new Response(tex, {
-        headers: {
-          "Content-Type": "application/x-tex; charset=utf-8",
-          "Content-Disposition": `attachment; filename="resume-${slug(base)}.tex"`,
-          "X-Tokens-In": String(result.tokensIn),
-          "X-Tokens-Out": String(result.tokensOut),
-        },
+      return NextResponse.json({
+        filename: `resume-${slug(base)}.tex`,
+        contentType: "application/x-tex; charset=utf-8",
+        fileB64: Buffer.from(tex, "utf8").toString("base64"),
+        oldText: original,
+        newText: tex,
+        tokensIn: result.tokensIn,
+        tokensOut: result.tokensOut,
       });
     }
 
@@ -111,13 +112,16 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       }
       if (map.size === 0) throw new Error("no replacements returned");
       const buf = await editDocx(resume.fileB64, map);
-      return new Response(new Uint8Array(buf), {
-        headers: {
-          "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "Content-Disposition": `attachment; filename="resume-${slug(base)}.docx"`,
-          "X-Tokens-In": String(result.tokensIn),
-          "X-Tokens-Out": String(result.tokensOut),
-        },
+      const oldText = paras.map((p) => p.text).join("\n");
+      const newText = paras.map((p) => map.get(p.index) ?? p.text).join("\n");
+      return NextResponse.json({
+        filename: `resume-${slug(base)}.docx`,
+        contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        fileB64: Buffer.from(buf).toString("base64"),
+        oldText,
+        newText,
+        tokensIn: result.tokensIn,
+        tokensOut: result.tokensOut,
       });
     }
 
@@ -137,13 +141,26 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const clean = JSON.parse(stripJsonFences(result.text)) as CleanResume;
     if (!clean?.name || !Array.isArray(clean.sections)) throw new Error("bad resume json");
     const buf = await buildCleanDocx(clean);
-    return new Response(new Uint8Array(buf), {
-      headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="resume-${slug(base)}.docx"`,
-        "X-Tokens-In": String(result.tokensIn),
-        "X-Tokens-Out": String(result.tokensOut),
-      },
+    const newText = [
+      clean.name,
+      clean.contact ?? "",
+      ...clean.sections.flatMap((s) => [
+        s.heading,
+        ...(s.items ?? []).flatMap((it) => [
+          [it.title, it.subtitle].filter(Boolean).join(" — "),
+          ...(it.bullets ?? []).map((b) => "• " + b),
+          ...(it.text ? [it.text] : []),
+        ]),
+      ]),
+    ].filter(Boolean).join("\n");
+    return NextResponse.json({
+      filename: `resume-${slug(base)}.docx`,
+      contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      fileB64: Buffer.from(buf).toString("base64"),
+      oldText: resume.content,
+      newText,
+      tokensIn: result.tokensIn,
+      tokensOut: result.tokensOut,
     });
   } catch (err) {
     console.error("studio export:", err);
