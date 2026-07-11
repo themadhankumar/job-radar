@@ -113,7 +113,12 @@ export function Studio({ jobId }: { jobId: number }) {
     return () => { cancelled = true; };
   }, [jobId, streamTurn]);
 
-  useEffect(scrollDown, [msgs, partial]);
+  // Wrapped so the effect returns void: scrollIntoView is spec'd to return
+  // undefined, but browser extensions patch it to return a value (smooth-scroll
+  // polyfills return a Promise). Passing scrollDown directly made React treat
+  // that value as the effect cleanup -> "TypeError: n is not a function" on the
+  // next commit, unmounting the whole page mid-stream.
+  useEffect(() => { scrollDown(); }, [msgs, partial]);
 
   async function send() {
     const text = input.trim();
