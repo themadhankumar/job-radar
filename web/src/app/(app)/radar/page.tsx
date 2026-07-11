@@ -158,6 +158,25 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     .orderBy(orderExpr)
     .limit(200);
 
+  // Surface the cap: a silent LIMIT hides rows with no signal that anything
+  // is missing (Suggested alone can exceed 200 now).
+  let totalMatching: number | null = null;
+  if (rows.length === 200) {
+    const [{ n }] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(schema.jobs)
+      .leftJoin(
+        sql`${schema.userJobStatus} AS ujs`,
+        sql`ujs.job_id = ${schema.jobs.id} AND ujs.user_id = ${user.id}`,
+      )
+      .leftJoin(
+        sql`user_job_scores AS sc`,
+        sql`sc.job_id = ${schema.jobs.id} AND sc.user_id = ${user.id}`,
+      )
+      .where(conds.length ? and(...conds) : undefined);
+    totalMatching = n;
+  }
+
   let jobs: JobRow[] = rows.map((r) => ({
     ...r,
     status: r.status ?? "new",
@@ -199,7 +218,14 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
           <EmptyState line="Nothing in the global feed matches these filters." />
         )
       ) : (
-        <JobsTable jobs={jobs} tab={tab} sort={sort} dir={dir} />
+        <>
+          <JobsTable jobs={jobs} tab={tab} sort={sort} dir={dir} />
+          {totalMatching !== null && totalMatching > 200 && (
+            <p className="t-muted mt-3 text-center text-xs">
+              Showing the top 200 of <span className="font-data">{totalMatching.toLocaleString()}</span> matches — narrow the filters to see the rest.
+            </p>
+          )}
+        </>
       )}
     </Shell>
   );

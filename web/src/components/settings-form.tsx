@@ -122,6 +122,12 @@ export function SettingsForm(props: {
       </section>
 
       <section className="surface rounded-xl p-5">
+        <h2 className="mb-1 text-sm font-semibold">Account</h2>
+        <p className="t-muted mb-3 text-xs">Change your password. You stay signed in on this device.</p>
+        <ChangePassword />
+      </section>
+
+      <section className="surface rounded-xl p-5">
         <h2 className="mb-3 text-sm font-semibold">Studio usage this month</h2>
         <div className="space-y-3">
           <div>
@@ -147,6 +153,48 @@ export function SettingsForm(props: {
       </section>
 
       {saved && <p className="t-accent text-sm transition-opacity duration-200 ease-[var(--ease)]">{saved}</p>}
+    </div>
+  );
+}
+
+function ChangePassword() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current, next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg({ ok: true, text: "Password updated." });
+        setCurrent("");
+        setNext("");
+      } else {
+        setMsg({ ok: false, text: data.error ?? "Couldn't update — try again." });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="Current password" className="input w-full" autoComplete="current-password" />
+      <div className="flex gap-2">
+        <input type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder="New password (8+ characters)" className="input" autoComplete="new-password" />
+        <button className="btn-ghost shrink-0" disabled={busy || !current || next.length < 8} onClick={submit}>
+          {busy ? "Saving…" : "Update"}
+        </button>
+      </div>
+      {msg && <p className={`text-xs ${msg.ok ? "t-accent" : "t-danger"}`}>{msg.text}</p>}
     </div>
   );
 }

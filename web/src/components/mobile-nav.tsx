@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoutButton, ThemeToggle } from "@/components/shell-actions";
 import { useEffect, useState } from "react";
 import { Radar, Building2, Target, FileText, UserRound, Settings, MoreHorizontal } from "lucide-react";
 
@@ -35,6 +36,10 @@ export function MobileNav() {
                 <Icon size={16} /> {label}
               </Link>
             ))}
+            <div className="mt-1 flex items-center justify-between border-t border-[rgb(var(--hairline)/0.10)] px-4 pb-1 pt-2">
+              <span className="t-muted text-xs">Theme · Sign out</span>
+              <div className="flex items-center gap-1"><ThemeToggle /><LogoutButton /></div>
+            </div>
           </div>
         </div>
       )}
