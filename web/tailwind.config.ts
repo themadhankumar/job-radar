@@ -38,6 +38,10 @@ const config: Config = {
           from: { transform: "translateX(24px)", opacity: "0" },
           to: { transform: "translateX(0)", opacity: "1" },
         },
+        "sheet-in": {
+          "0%": { transform: "translateY(16px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
         "fade-in": {
           from: { opacity: "0" },
           to: { opacity: "1" },
@@ -48,6 +52,7 @@ const config: Config = {
         shimmer: "shimmer 1.6s linear infinite",
         "tick-in": "tick-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
         "drawer-in": "drawer-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "sheet-in": "sheet-in 200ms cubic-bezier(0.16, 1, 0.3, 1)",
         "fade-in": "fade-in 200ms ease-out both",
       },
     },
