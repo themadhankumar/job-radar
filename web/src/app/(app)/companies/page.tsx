@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 
-type Company = { id: number; name: string; ats: string };
+type Company = { id: number; name: string; ats: string; hasReferral?: boolean };
 type Mine = { companyId: number; list: string };
 
 export default function CompaniesPage() {
@@ -109,7 +109,7 @@ export default function CompaniesPage() {
         {tracked.length === 0 && <p className="t-muted p-4 text-sm">Nothing yet — add a company above or pick from the registry below.</p>}
         {tracked.map((c) => (
           <div key={c.id} className="flex items-center justify-between border-b border-[rgb(var(--hairline)/0.10)] px-4 py-2.5 last:border-0">
-            <span className="text-sm font-medium">{c.name} <span className="chip t-muted ml-2">{c.ats}</span></span>
+            <span className="text-sm font-medium">{c.name} <span className="chip t-muted ml-2">{c.ats}</span>{c.hasReferral && <span className="chip t-ok ml-1.5 border-[rgb(var(--ok)/0.35)]" title="You have a referral contact here">🤝 Referral</span>}</span>
             <button aria-label={`Stop watching ${c.name}`} className="t-muted rounded p-1.5 transition-colors duration-150 hover:text-[rgb(var(--danger))]" onClick={() => remove(c.id)}>
               <Trash2 size={15} />
             </button>
@@ -123,7 +123,7 @@ export default function CompaniesPage() {
           <div className="flex flex-wrap gap-1.5">
             {available.map((c) => (
               <button key={c.id} className="chip t-muted border-dashed transition-colors duration-150 hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]" onClick={() => add(c.name, c.id)}>
-                + {c.name}
+                + {c.name}{c.hasReferral && " 🤝"}
               </button>
             ))}
           </div>

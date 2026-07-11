@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getSessionUserId } from "@/lib/auth";
 import { detectAts, fetchBoard } from "@/lib/ats";
@@ -10,7 +10,15 @@ export async function GET() {
   const uid = await getSessionUserId();
   if (!uid) return NextResponse.json({ error: "Sign in to continue" }, { status: 401 });
   const all = await db
-    .select({ id: schema.companies.id, name: schema.companies.name, ats: schema.companies.ats })
+    .select({
+      id: schema.companies.id,
+      name: schema.companies.name,
+      ats: schema.companies.ats,
+      hasReferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM referral_contacts rc
+        WHERE rc.user_id = ${uid} AND norm_employer(rc.company_name) = norm_employer(${schema.companies.name})
+      )`,
+    })
     .from(schema.companies)
     .orderBy(asc(schema.companies.name));
   const mine = await db

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowUp, ExternalLink, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, Handshake, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
 import { htmlToText } from "@/lib/text";
@@ -27,6 +27,7 @@ export type JobRow = {
   sponsorApprovals: number | null;
   otherLocations?: string[];
   components: MatchComponents | null;
+  referralContacts?: { name: string; relationship: string; warmth: string | null; status: string }[];
 };
 
 function pay(j: JobRow): string | null {
@@ -190,14 +191,23 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
           <tbody>
             {jobs.filter((j) => !hidden.has(j.id)).map((j) => {
               const st = statuses[j.id] ?? j.status;
+              const referrals = j.referralContacts ?? [];
+              const hasReferral = referrals.length > 0;
+              const warmest = referrals.some((r) => r.warmth === "warm") ? "warm" : referrals.some((r) => r.warmth === "cold") ? "cold" : null;
               return (
                 <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); }}
-                  className="group cursor-pointer border-b border-[rgb(var(--hairline)/0.10)] transition-colors duration-150 last:border-0 hover:bg-[rgb(var(--surface))]">
+                  className={`group cursor-pointer border-b border-[rgb(var(--hairline)/0.10)] transition-colors duration-150 last:border-0 hover:bg-[rgb(var(--surface))] ${hasReferral ? "bg-[rgb(var(--ok)/0.05)] shadow-[inset_2px_0_0_rgb(var(--ok))]" : ""}`}>
                   <td className="px-3 py-3 transition-shadow duration-150 group-hover:shadow-[inset_2px_0_0_rgb(var(--accent))]"><ScoreBadge score={j.score} /></td>
                   <td className="px-3 py-3 font-medium">
                     <span className="flex items-center">
                       {isFresh(j.createdAt) && st === "new" && <NewDot />}
                       <span className="truncate">{j.title}</span>
+                      {hasReferral && (
+                        <span title={`Referral: ${referrals.map((r) => r.name).join(", ")}`}
+                          className={`ml-1.5 inline-flex shrink-0 items-center ${warmest === "warm" ? "t-ok" : "t-muted"}`}>
+                          <Handshake size={13} />
+                        </span>
+                      )}
                     </span>
                   </td>
                   <td className="truncate px-3 py-3" title={j.companyName}>{j.companyName}</td>
@@ -261,6 +271,19 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
               <span className="chip t-muted">via {open.source}</span>
               <span className="chip t-muted">posted {ago(open.postedAt)}</span>
             </div>
+            {open.referralContacts && open.referralContacts.length > 0 && (
+              <div className="surface mb-4 rounded-lg border-[rgb(var(--ok)/0.35)] p-3 text-sm">
+                <p className="t-ok mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide"><Handshake size={13} /> Referral available</p>
+                <div className="space-y-1.5">
+                  {open.referralContacts.map((r, i) => (
+                    <p key={i} className="text-sm">
+                      <span className="font-medium">{r.name}</span>
+                      <span className="t-muted"> · {r.relationship}{r.warmth ? ` · ${r.warmth}` : ""}{r.status !== "not_asked" ? ` · ${r.status.replace("_", " ")}` : ""}</span>
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="surface mb-4 rounded-lg p-3 text-sm">
               <p className="t-muted mb-1 text-xs font-medium uppercase tracking-wide">H-1B sponsorship signal</p>
               {open.sponsorApprovals != null && open.sponsorApprovals > 0 ? (

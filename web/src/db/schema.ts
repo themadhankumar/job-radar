@@ -217,6 +217,22 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const referralContacts = pgTable("referral_contacts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  companyName: text("company_name").notNull(),
+  companyId: integer("company_id").references(() => companies.id, { onDelete: "set null" }),
+  role: text("role"),
+  relationship: text("relationship").notNull(),
+  contactDetails: text("contact_details"),
+  status: text("status", { enum: ["not_asked", "asked", "referred", "declined"] }).default("not_asked").notNull(),
+  warmth: text("warmth", { enum: ["warm", "cold"] }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const authAttempts = pgTable("auth_attempts", {
   key: text("key").primaryKey(),
   count: integer("count").notNull().default(1),

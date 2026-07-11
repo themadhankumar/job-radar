@@ -45,6 +45,16 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
                 ? sql`NULLIF(lower(${schema.jobs.location}), '') ${d} NULLS LAST`
                 : sql`sc.score ${d} NULLS LAST, ${schema.jobs.postedAt} DESC NULLS LAST`;
 
+  // Referral rows always float to the top, independent of sort/score — a warm
+  // contact beats a slightly-higher match %. json_agg carries the matched
+  // contacts through so the drawer can show who to ping.
+  const referralAgg = sql`COALESCE((
+    SELECT json_agg(json_build_object('name', rc.name, 'relationship', rc.relationship, 'warmth', rc.warmth, 'status', rc.status))
+    FROM referral_contacts rc
+    WHERE rc.user_id = ${user.id} AND norm_employer(rc.company_name) = norm_employer(${schema.jobs.companyName})
+  ), '[]'::json)`;
+  const orderExprWithReferrals = sql`(CASE WHEN json_array_length(${referralAgg}) > 0 THEN 0 ELSE 1 END) ASC, ${orderExpr}`;
+
   const keywords = await db.select().from(schema.userKeywords).where(eq(schema.userKeywords.userId, user.id));
   const pick = (scope: "tracked" | "global", kind: "include" | "exclude") =>
     keywords.filter((k) => k.scope === scope && k.kind === kind).map((k) => k.keyword);
@@ -144,6 +154,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       payPeriod: schema.jobs.payPeriod,
       yoeMin: schema.jobs.yoeMin,
       sponsorApprovals: sql<number | null>`(SELECT sum(s.approvals)::int FROM sponsors s WHERE s.norm = norm_employer(${schema.jobs.companyName}) AND s.fiscal_year >= extract(year from now())::int - 3)`,
+      referralContacts: sql<{ name: string; relationship: string; warmth: string | null; status: string }[]>`${referralAgg}`,
     })
     .from(schema.jobs)
     .leftJoin(
@@ -155,7 +166,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       sql`sc.job_id = ${schema.jobs.id} AND sc.user_id = ${user.id}`,
     )
     .where(conds.length ? and(...conds) : undefined)
-    .orderBy(orderExpr)
+    .orderBy(orderExprWithReferrals)
     .limit(200);
 
   // Surface the cap: a silent LIMIT hides rows with no signal that anything
