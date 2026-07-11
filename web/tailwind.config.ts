@@ -29,10 +29,31 @@ const config: Config = {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        "tick-in": {
+          "0%": { transform: "scale(0.4)", opacity: "0" },
+          "60%": { transform: "scale(1.15)" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "drawer-in": {
+          from: { transform: "translateX(24px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
+        },
+        "sheet-in": {
+          "0%": { transform: "translateY(16px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "radar-ping": "radar-ping 1.8s cubic-bezier(0,0,0.2,1) infinite",
         shimmer: "shimmer 1.6s linear infinite",
+        "tick-in": "tick-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "drawer-in": "drawer-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "sheet-in": "sheet-in 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "fade-in": "fade-in 200ms ease-out both",
       },
     },
   },

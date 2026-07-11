@@ -42,7 +42,7 @@ export default function ForgotPage() {
         ) : (
           <form onSubmit={submit} className="space-y-3">
             <input name="email" type="email" required placeholder="Email" className="input" autoComplete="email" />
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="text-sm text-[rgb(var(--danger))]">{error}</p>}
             <button disabled={loading} className="btn-primary w-full">
               {loading ? "One moment…" : "Send reset link"}
             </button>

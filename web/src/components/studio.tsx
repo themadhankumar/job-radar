@@ -158,14 +158,14 @@ export function Studio({ jobId }: { jobId: number }) {
         {msgs.map((m, i) => (
           <div key={m.id ?? `local-${i}`}
             className={m.role === "user"
-              ? "ml-8 rounded-lg bg-[rgb(var(--accent))]/10 p-3 text-sm"
-              : "surface rounded-lg p-3 text-sm"}>
+              ? "ml-8 rounded-2xl rounded-br-md bg-[rgb(var(--accent-soft))] p-3 text-sm"
+              : "surface rounded-2xl rounded-bl-md p-3 text-sm"}>
             <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
           </div>
         ))}
         {partial && (
-          <div className="surface rounded-lg p-3 text-sm">
-            <p className="whitespace-pre-wrap leading-relaxed">{partial}<span className="animate-pulse">▍</span></p>
+          <div className="surface rounded-2xl rounded-bl-md p-3 text-sm">
+            <p className="whitespace-pre-wrap leading-relaxed">{partial}<span className="t-accent animate-pulse">▍</span></p>
           </div>
         )}
         {streaming && !partial && (

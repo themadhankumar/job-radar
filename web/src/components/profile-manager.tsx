@@ -24,7 +24,7 @@ function ChipEditor(props: {
           <span key={v} className="chip inline-flex items-center gap-1">
             {v}
             <button aria-label={`Remove ${v}`} onClick={() => props.onChange(props.values.filter((x) => x !== v))}
-              className="t-muted hover:text-red-400"><X size={11} /></button>
+              className="t-muted transition-colors duration-150 hover:text-[rgb(var(--danger))]"><X size={11} /></button>
           </span>
         ))}
         <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={props.placeholder}

@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, ExternalLink, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
 import { htmlToText } from "@/lib/text";
+import { getScoreTier, SCORE_TIER_HI, SCORE_TIER_MID } from "@/lib/score-tier";
 import type { MatchComponents } from "@/db/schema";
 
 export type JobRow = {
@@ -35,11 +36,28 @@ function pay(j: JobRow): string | null {
   return j.payPeriod === "hour" ? `${range}/hr` : range;
 }
 
+
 function ScoreBadge({ score }: { score: number | null }) {
   if (score == null) return <span className="t-muted text-xs">—</span>;
   // Signal tiers: one hue, three intensities — high signal glows, weak signal recedes
-  const tier = score >= 70 ? "score-hi" : score >= 50 ? "score-mid" : "score-low";
-  return <span className={`${tier} text-[13px] tabular-nums`}>{score}%</span>;
+  return <span className={`${getScoreTier(score)} text-[13px] tabular-nums`}>{score}%</span>;
+}
+
+function ScoreDial({ score }: { score: number }) {
+  const r = 26;
+  const c = 2 * Math.PI * r;
+  const tier = getScoreTier(score);
+  const arcOpacity = score >= SCORE_TIER_HI ? 1 : score >= SCORE_TIER_MID ? 0.55 : 0.3;
+  return (
+    <div className="relative h-16 w-16 shrink-0" title={`${score}% match`}>
+      <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
+        <circle cx="32" cy="32" r={r} fill="none" stroke="rgb(var(--hairline) / 0.15)" strokeWidth="4" />
+        <circle cx="32" cy="32" r={r} fill="none" stroke="rgb(var(--accent))" strokeWidth="4"
+          strokeLinecap="round" strokeDasharray={`${(score / 100) * c} ${c}`} opacity={arcOpacity} />
+      </svg>
+      <span className={`absolute inset-0 flex items-center justify-center ${tier} text-[15px]`}>{score}</span>
+    </div>
+  );
 }
 
 const COMPONENT_META: { key: keyof Omit<MatchComponents, "missing">; label: string; weight: number }[] = [
@@ -58,10 +76,10 @@ function MatchBreakdown({ c }: { c: MatchComponents }) {
         {COMPONENT_META.map(({ key, label, weight }) => (
           <div key={key} className="flex items-center gap-2 text-xs">
             <span className="w-28 shrink-0">{label}</span>
-            <div className="h-1.5 flex-1 overflow-hidden rounded bg-[rgb(var(--border))]">
-              <div className="h-full rounded bg-[rgb(var(--accent))]" style={{ width: `${Math.round((c[key] ?? 0) * 100)}%` }} />
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
+              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: `${Math.round((c[key] ?? 0) * 100)}%` }} />
             </div>
-            <span className="t-muted w-16 shrink-0 text-right font-mono">{Math.round((c[key] ?? 0) * 100)}% · {weight}w</span>
+            <span className="t-muted font-data w-16 shrink-0 text-right text-[11px]">{Math.round((c[key] ?? 0) * 100)}% · {weight}w</span>
           </div>
         ))}
       </div>
@@ -69,7 +87,7 @@ function MatchBreakdown({ c }: { c: MatchComponents }) {
         <div className="mt-3">
           <p className="t-muted mb-1.5 text-xs">Terms in this posting your profile doesn't cover — add real ones to your resume or profile to raise the match:</p>
           <div className="flex flex-wrap gap-1.5">
-            {c.missing.map((m) => <span key={m} className="chip text-xs">+ {m}</span>)}
+            {c.missing.map((m) => <span key={m} className="chip border-dashed text-xs transition-colors duration-150 hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]">+ {m}</span>)}
           </div>
         </div>
       )}
@@ -211,20 +229,21 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
 
       {open && (
         <div className="fixed inset-0 z-30" onClick={() => setOpenId(null)}>
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="animate-fade-in absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
           <aside onClick={(e) => e.stopPropagation()}
-            className="surface absolute inset-y-0 right-0 flex w-full max-w-lg flex-col border-y-0 border-r-0 p-6 shadow-xl">
+            className="animate-drawer-in absolute inset-y-0 right-0 flex w-full max-w-lg flex-col rounded-l-2xl border-l border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-6 shadow-2xl">
             <div className="mb-4 flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-semibold leading-snug">{open.title}</h2>
                 <p className="t-muted text-sm">{open.companyName} · {open.location || "Location not listed"}</p>
               </div>
+              {open.score != null && <ScoreDial score={open.score} />}
               <button aria-label="Close" onClick={() => setOpenId(null)} className="btn-ghost h-8 w-8 shrink-0 p-0"><X size={15} /></button>
             </div>
             <div className="mb-4 flex gap-1 border-b border-[rgb(var(--border))]">
               {(["details", "studio"] as const).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
-                  className={`px-3 py-1.5 text-sm capitalize ${tab === t
+                  className={`px-3 py-1.5 text-sm capitalize transition-colors duration-150 ${tab === t
                     ? "border-b-2 border-[rgb(var(--accent))] font-medium"
                     : "t-muted hover:text-inherit"}`}>
                   {t === "studio" ? "✦ Studio" : "Details"}
@@ -237,7 +256,6 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
             ) : (
             <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="mb-4 flex flex-wrap gap-2 text-xs">
-              {open.score != null && <span className="chip t-accent border-[rgb(var(--accent))]">match {open.score}</span>}
               {pay(open) && <span className="chip">{pay(open)}</span>}
               {open.yoeMin != null && <span className="chip">{open.yoeMin}+ yrs</span>}
               <span className="chip t-muted">via {open.source}</span>

@@ -1,5 +1,5 @@
 "use client";
-import { RefreshCw } from "lucide-react";
+import { Check, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -32,6 +32,8 @@ export function RefreshButton() {
   const [modal, setModal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [ok, setOk] = useState(false); // transient tick after a watched run succeeds
+  const okTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Poll status; keep polling every 12s while a run is active. When a run we
@@ -47,7 +49,13 @@ export function RefreshButton() {
         if (active) {
           timer.current = setTimeout(() => load(true), 12000);
         } else if (watching) {
-          setNote(data.run?.conclusion === "success" ? "Done — data refreshed." : "Run finished; check Actions.");
+          const success = data.run?.conclusion === "success";
+          setNote(success ? "Done — data refreshed." : "Run finished; check Actions.");
+          if (success) {
+            setOk(true);
+            clearTimeout(okTimer.current);
+            okTimer.current = setTimeout(() => setOk(false), 4000);
+          }
           router.refresh();
         }
       } catch {
@@ -59,7 +67,10 @@ export function RefreshButton() {
 
   useEffect(() => {
     load();
-    return () => clearTimeout(timer.current);
+    return () => {
+      clearTimeout(timer.current);
+      clearTimeout(okTimer.current);
+    };
   }, [load]);
 
   const trigger = async () => {
@@ -89,7 +100,7 @@ export function RefreshButton() {
   const active = !!run && run.status !== "completed";
   const cooldown = st.cooldownRemainingSec ?? 0;
   const disabled = busy || active || cooldown > 0;
-  const label = active ? (run!.status === "queued" ? "Queued…" : "Running…") : "Refresh now";
+  const label = active ? (run!.status === "queued" ? "Queued…" : "Sweeping…") : ok ? "Refreshed" : "Refresh now";
 
   return (
     <div className="flex items-center gap-3">
@@ -97,12 +108,16 @@ export function RefreshButton() {
         {note || (run && run.status === "completed" ? `Last run ${ago(run.updatedAt)}` : "")}
       </span>
       <button
-        className="btn-ghost h-8 px-3 text-xs"
+        className="btn-ghost group h-8 px-3 text-xs"
         disabled={disabled}
         title={cooldown > 0 && !active ? `Available in ${Math.ceil(cooldown / 60)}m` : "Sweep all boards for new jobs"}
         onClick={() => setModal(true)}
       >
-        <RefreshCw size={13} className={active ? "t-accent animate-spin" : ""} />
+        {ok && !active ? (
+          <Check size={13} className="t-ok animate-tick-in" />
+        ) : (
+          <RefreshCw size={13} className={active ? "t-accent animate-spin" : "transition-transform duration-200 ease-[var(--ease)] group-hover:rotate-45"} />
+        )}
         {label}
       </button>
       {modal && (

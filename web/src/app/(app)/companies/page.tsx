@@ -103,14 +103,14 @@ export default function CompaniesPage() {
       </section>
 
       <section className="surface mb-6 rounded-xl">
-        <h2 className="t-muted border-b border-[rgb(var(--border))] px-4 py-2.5 text-xs font-medium uppercase tracking-wide">
+        <h2 className="t-muted border-b border-[rgb(var(--hairline)/0.10)] px-4 py-2.5 text-xs font-medium uppercase tracking-wide">
           Watching ({tracked.length})
         </h2>
         {tracked.length === 0 && <p className="t-muted p-4 text-sm">Nothing yet — add a company above or pick from the registry below.</p>}
         {tracked.map((c) => (
-          <div key={c.id} className="flex items-center justify-between border-b border-[rgb(var(--border))] px-4 py-2.5 last:border-0">
+          <div key={c.id} className="flex items-center justify-between border-b border-[rgb(var(--hairline)/0.10)] px-4 py-2.5 last:border-0">
             <span className="text-sm font-medium">{c.name} <span className="chip t-muted ml-2">{c.ats}</span></span>
-            <button aria-label={`Stop watching ${c.name}`} className="t-muted rounded p-1.5 hover:text-red-500" onClick={() => remove(c.id)}>
+            <button aria-label={`Stop watching ${c.name}`} className="t-muted rounded p-1.5 transition-colors duration-150 hover:text-[rgb(var(--danger))]" onClick={() => remove(c.id)}>
               <Trash2 size={15} />
             </button>
           </div>
@@ -122,7 +122,7 @@ export default function CompaniesPage() {
           <h2 className="t-muted mb-2 text-xs font-medium uppercase tracking-wide">From the shared registry</h2>
           <div className="flex flex-wrap gap-1.5">
             {available.map((c) => (
-              <button key={c.id} className="chip t-muted hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]" onClick={() => add(c.name, c.id)}>
+              <button key={c.id} className="chip t-muted border-dashed transition-colors duration-150 hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]" onClick={() => add(c.name, c.id)}>
                 + {c.name}
               </button>
             ))}

@@ -32,7 +32,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="surface w-full max-w-sm rounded-xl p-8">
+      <div className="surface w-full max-w-sm rounded-2xl p-8 shadow-[0_0_60px_rgb(var(--glow)/0.07)]">
         <div className="mb-6 flex justify-center text-lg"><Logo /></div>
         <h1 className="mb-1 text-center text-xl font-semibold">
           {mode === "login" ? "Welcome back" : "Create your account"}
@@ -55,7 +55,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               <Link href="/forgot" className="t-muted text-xs hover:underline">Forgot password?</Link>
             </div>
           )}
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="t-danger text-sm">{error}</p>}
           <button disabled={loading} className="btn-primary w-full">
             {loading ? "One moment…" : mode === "login" ? "Sign in" : "Create account"}
           </button>

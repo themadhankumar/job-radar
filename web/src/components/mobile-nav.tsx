@@ -26,19 +26,19 @@ export function MobileNav() {
     <>
       {open && (
         <div className="fixed inset-0 z-20 sm:hidden" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="surface absolute inset-x-0 bottom-14 rounded-t-xl border-x-0 border-b-0 p-2"
+          <div className="animate-fade-in absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+          <div className="animate-sheet-in absolute inset-x-0 bottom-14 rounded-t-2xl border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-2"
             onClick={(e) => e.stopPropagation()}>
             {MORE.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href}
-                className={`flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium ${pathname.startsWith(href) ? "t-accent" : "t-muted"}`}>
+                className={`flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition-colors duration-150 ${pathname.startsWith(href) ? "t-accent" : "t-muted hover:text-inherit"}`}>
                 <Icon size={16} /> {label}
               </Link>
             ))}
           </div>
         </div>
       )}
-      <nav className="surface fixed inset-x-0 bottom-0 z-20 flex justify-around border-x-0 border-b-0 py-2 sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-around border-t border-[rgb(var(--hairline)/0.10)] bg-[rgb(var(--surface))] py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:hidden">
         {PRIMARY.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href}
             className={`flex flex-col items-center gap-0.5 px-4 py-1 text-xs ${pathname.startsWith(href) ? "t-accent" : "t-muted"}`}>

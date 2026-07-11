@@ -1,6 +1,40 @@
 "use client";
 import { useState } from "react";
 
+function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors duration-200 ease-[var(--ease)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--accent))] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--bg))] ${
+        checked
+          ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))]"
+          : "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]"
+      }`}
+    >
+      <span
+        className={`absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white transition-[left,box-shadow] duration-200 ease-[var(--ease)] ${
+          checked ? "left-[18px] shadow-[0_0_8px_rgb(var(--glow)/0.6)]" : "left-[3px]"
+        }`}
+      />
+    </button>
+  );
+}
+
+function Row({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-[rgb(var(--hairline)/0.10)] py-3 last:border-0">
+      <div className="min-w-0">
+        <p className="text-sm">{label}</p>
+        <p className="t-muted text-xs">{hint}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function SettingsForm(props: {
   digestEnabled: boolean;
   needsSponsorship: boolean;
@@ -30,38 +64,41 @@ export function SettingsForm(props: {
     setTimeout(() => setSaved(""), 2500);
   }
 
+  const CAP_IN = 100_000;
+  const CAP_OUT = 20_000;
+  const pctIn = Math.min(100, Math.round((props.usage.tokensIn / CAP_IN) * 100));
+  const pctOut = Math.min(100, Math.round((props.usage.tokensOut / CAP_OUT) * 100));
+
   return (
     <div className="space-y-6">
       <section className="surface rounded-xl p-5">
-        <h2 className="mb-3 text-sm font-semibold">Preferences</h2>
-        <label className="flex cursor-pointer items-center justify-between py-2 text-sm">
-          <span>Daily email digest at 6 PM<span className="t-muted block text-xs">New matches from the last 24 hours, delivered once a day.</span></span>
-          <input type="checkbox" checked={digest} className="accent-[rgb(var(--accent))]"
-            onChange={(e) => { setDigest(e.target.checked); save({ digestEnabled: e.target.checked }, "Digest preference"); }} />
-        </label>
-        <label className="flex cursor-pointer items-center justify-between py-2 text-sm">
-          <span>I need visa sponsorship<span className="t-muted block text-xs">Shows employer sponsorship signals on job details.</span></span>
-          <input type="checkbox" checked={sponsor} className="accent-[rgb(var(--accent))]"
-            onChange={(e) => { setSponsor(e.target.checked); save({ needsSponsorship: e.target.checked }, "Sponsorship preference"); }} />
-        </label>
-        <label className="flex cursor-pointer items-center justify-between py-2 text-sm">
-          <span>US roles only<span className="t-muted block text-xs">Hides clearly international postings everywhere — radar tabs, Suggested, and the email digest. Ambiguous locations (plain "Remote") stay visible.</span></span>
-          <input type="checkbox" checked={usOnly} className="accent-[rgb(var(--accent))]"
-            onChange={(e) => { setUsOnly(e.target.checked); save({ usOnly: e.target.checked }, "US-only preference"); }} />
-        </label>
-        <div className="py-2 text-sm">
-          <div className="flex items-center justify-between">
-            <span>Suggested match bar<span className="t-muted block text-xs">Jobs need at least this match % to appear on the Suggested tab.</span></span>
-            <span className="t-accent w-12 text-right font-mono">{threshold}%</span>
+        <h2 className="mb-1 text-sm font-semibold">Preferences</h2>
+        <div>
+          <Row label="Daily email digest at 6 PM" hint="New matches from the last 24 hours, delivered once a day.">
+            <Switch checked={digest} onChange={(v) => { setDigest(v); save({ digestEnabled: v }, "Digest preference"); }} />
+          </Row>
+          <Row label="I need visa sponsorship" hint="Shows employer sponsorship signals on job details.">
+            <Switch checked={sponsor} onChange={(v) => { setSponsor(v); save({ needsSponsorship: v }, "Sponsorship preference"); }} />
+          </Row>
+          <Row label="US roles only" hint='Hides clearly international postings everywhere — radar tabs, Suggested, and the email digest. Ambiguous locations (plain "Remote") stay visible.'>
+            <Switch checked={usOnly} onChange={(v) => { setUsOnly(v); save({ usOnly: v }, "US-only preference"); }} />
+          </Row>
+          <div className="py-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm">Suggested match bar</p>
+                <p className="t-muted text-xs">Jobs need at least this match % to appear on the Suggested tab.</p>
+              </div>
+              <span className="score-mid w-12 shrink-0 text-right text-sm">{threshold}%</span>
+            </div>
+            <input type="range" min={10} max={90} step={5} value={threshold}
+              className="mt-3 w-full accent-[rgb(var(--accent))]"
+              onChange={(e) => setThreshold(Number(e.target.value))}
+              onMouseUp={() => save({ suggestedThreshold: threshold }, "Suggested threshold")}
+              onTouchEnd={() => save({ suggestedThreshold: threshold }, "Suggested threshold")} />
           </div>
-          <input type="range" min={10} max={90} step={5} value={threshold}
-            className="mt-2 w-full accent-[rgb(var(--accent))]"
-            onChange={(e) => setThreshold(Number(e.target.value))}
-            onMouseUp={() => save({ suggestedThreshold: threshold }, "Suggested threshold")}
-            onTouchEnd={() => save({ suggestedThreshold: threshold }, "Suggested threshold")} />
         </div>
       </section>
-
 
       <section className="surface rounded-xl p-5">
         <h2 className="mb-1 text-sm font-semibold">Anthropic API key {props.hasKey && <span className="chip t-accent ml-2">configured</span>}</h2>
@@ -83,15 +120,33 @@ export function SettingsForm(props: {
           </div>
         </div>
       </section>
+
       <section className="surface rounded-xl p-5">
-        <h2 className="mb-1 text-sm font-semibold">Studio usage this month</h2>
-        <p className="t-muted text-xs">
-          {props.usage.tokensIn.toLocaleString()} input · {props.usage.tokensOut.toLocaleString()} output tokens
-          {!props.hasKey && " — shared key caps: 100,000 in / 20,000 out per month."}
-        </p>
+        <h2 className="mb-3 text-sm font-semibold">Studio usage this month</h2>
+        <div className="space-y-3">
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="t-muted">Input</span>
+              <span className="font-data t-muted">{props.usage.tokensIn.toLocaleString()}{!props.hasKey && ` / ${CAP_IN.toLocaleString()}`}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
+              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: props.hasKey ? "100%" : `${pctIn}%` }} />
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="t-muted">Output</span>
+              <span className="font-data t-muted">{props.usage.tokensOut.toLocaleString()}{!props.hasKey && ` / ${CAP_OUT.toLocaleString()}`}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
+              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: props.hasKey ? "100%" : `${pctOut}%` }} />
+            </div>
+          </div>
+          {props.hasKey && <p className="t-muted text-xs">Using your own key — uncapped, tracked for reference only.</p>}
+        </div>
       </section>
 
-      {saved && <p className="t-accent text-sm">{saved}</p>}
+      {saved && <p className="t-accent text-sm transition-opacity duration-200 ease-[var(--ease)]">{saved}</p>}
     </div>
   );
 }
