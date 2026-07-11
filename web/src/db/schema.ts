@@ -233,6 +233,16 @@ export const referralContacts = pgTable("referral_contacts", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  email: text("email"),
+  type: text("type", { enum: ["bug", "idea", "other"] }).default("other").notNull(),
+  message: text("message").notNull(),
+  pagePath: text("page_path"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const authAttempts = pgTable("auth_attempts", {
   key: text("key").primaryKey(),
   count: integer("count").notNull().default(1),

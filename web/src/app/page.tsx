@@ -9,6 +9,7 @@ import {
   SponsorFragment, AddUrlFragment, DigestFragment,
 } from "@/components/landing-fragments";
 import { getSessionUser } from "@/lib/auth";
+import { FeedbackWidget } from "@/components/feedback-widget";
 
 export const revalidate = 3600;
 
@@ -176,6 +177,7 @@ export default async function Landing() {
           </div>
         </div>
       </footer>
+      <FeedbackWidget />
     </div>
   );
 }

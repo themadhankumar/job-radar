@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth";
 import { LogoutButton, ThemeToggle } from "@/components/shell-actions";
 import { MobileNav } from "@/components/mobile-nav";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { FeedbackWidget } from "@/components/feedback-widget";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
@@ -24,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
       <MobileNav />
       <main className="w-full px-4 pb-20 pt-6 sm:px-8 sm:pb-8 sm:pt-8 sm:pl-56">{children}</main>
+      <FeedbackWidget loggedIn />
     </div>
   );
 }
