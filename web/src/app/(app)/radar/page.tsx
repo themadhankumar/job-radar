@@ -245,16 +245,16 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
 function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string }) {
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-1 flex items-center justify-between gap-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Radar</h1>
         <div className="flex items-center gap-2">
           <AddByUrl />
           <RefreshButton />
         </div>
       </div>
-      <p className="t-muted mb-6 text-sm">Open roles across your watchlist, newest signal first.</p>
+      <p className="t-muted mb-8 text-sm">Open roles across your watchlist, newest signal first.</p>
       <RadarFilters {...filters} />
-      {children}
+      <div className="mt-6">{children}</div>
     </div>
   );
 }

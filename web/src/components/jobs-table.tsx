@@ -177,7 +177,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                     onClick={() => onSort(h)}
                     title={col ? `Sort by ${h.toLowerCase()}` : undefined}
                     aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined}
-                    className={`t-muted px-3 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] ${col ? "cursor-pointer select-none transition-colors duration-150 hover:text-[rgb(var(--accent))]" : ""} ${active ? "t-accent" : ""}`}>
+                    className={`t-muted px-4 py-3.5 text-[11px] font-medium uppercase tracking-[0.08em] ${col ? "cursor-pointer select-none transition-colors duration-150 hover:text-[rgb(var(--accent))]" : ""} ${active ? "t-accent" : ""}`}>
                     <span className="inline-flex items-center gap-1">
                       {h}
                       {active && (dir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />)}
@@ -197,8 +197,8 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
               return (
                 <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); }}
                   className={`group cursor-pointer border-b border-[rgb(var(--hairline)/0.10)] transition-colors duration-150 last:border-0 hover:bg-[rgb(var(--surface))] ${hasReferral ? "bg-[rgb(var(--ok)/0.05)] shadow-[inset_2px_0_0_rgb(var(--ok))]" : ""}`}>
-                  <td className="px-3 py-3 transition-shadow duration-150 group-hover:shadow-[inset_2px_0_0_rgb(var(--accent))]"><ScoreBadge score={j.score} /></td>
-                  <td className="px-3 py-3 font-medium">
+                  <td className="px-4 py-4 transition-shadow duration-150 group-hover:shadow-[inset_2px_0_0_rgb(var(--accent))]"><ScoreBadge score={j.score} /></td>
+                  <td className="px-4 py-4 font-medium">
                     <span className="flex items-center">
                       {isFresh(j.createdAt) && st === "new" && <NewDot />}
                       <span className="truncate">{j.title}</span>
@@ -210,13 +210,13 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                       )}
                     </span>
                   </td>
-                  <td className="truncate px-3 py-3" title={j.companyName}>{j.companyName}</td>
-                  <td className="t-muted truncate px-3 py-3">{pay(j) ?? "—"}</td>
-                  <td className="t-muted truncate px-3 py-3" title={[j.location, ...(j.otherLocations ?? [])].filter(Boolean).join(" · ")}>
+                  <td className="truncate px-4 py-4" title={j.companyName}>{j.companyName}</td>
+                  <td className="t-muted truncate px-4 py-4">{pay(j) ?? "—"}</td>
+                  <td className="t-muted truncate px-4 py-4" title={[j.location, ...(j.otherLocations ?? [])].filter(Boolean).join(" · ")}>
                     {j.location || "—"}{j.otherLocations?.length ? <span className="t-accent"> +{j.otherLocations.length}</span> : null}
                   </td>
-                  <td className="t-muted truncate px-3 py-3">{ago(j.postedAt)}</td>
-                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                  <td className="t-muted truncate px-4 py-4">{ago(j.postedAt)}</td>
+                  <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                     <select value={st} onChange={(e) => setStatus(j.id, e.target.value)}
                       className="t-muted rounded-full border border-transparent bg-[rgb(var(--surface-2))] px-2.5 py-1 text-xs transition-colors duration-150 hover:border-[rgb(var(--border))] hover:text-[rgb(var(--text))]">
                       {STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}

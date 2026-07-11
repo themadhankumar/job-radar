@@ -53,7 +53,9 @@ export function ResumeManager() {
         ? "Resume replaced and profile re-parsed — see the Profile tab."
         : data.profileStale
           ? "Resume replaced. Your profile has hand edits, so it wasn't overwritten — use Re-parse on the Profile tab if you want a fresh one."
-          : "Resume replaced.",
+          : data.profileError
+            ? "Resume saved, but the profile parse failed — hit Re-parse on the Profile tab (check your API key in Settings if it keeps failing)."
+            : "Resume replaced.",
     );
     load();
   }
@@ -62,7 +64,7 @@ export function ResumeManager() {
 
   return (
     <div className="space-y-5">
-      <section className="surface rounded-xl p-5">
+      <section className="surface rounded-xl p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <FileText size={18} className="t-muted shrink-0" />

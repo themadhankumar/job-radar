@@ -79,6 +79,7 @@ export async function POST(req: Request) {
     // preserved — the Resume page offers an explicit re-parse instead.
     let profileUpdated = false;
     let profileStale = false;
+    let profileError = false;
     try {
       const existing = await getProfile(uid);
       if (existing?.edited) {
@@ -90,11 +91,18 @@ export async function POST(req: Request) {
           await upsertProfile(uid, profile, false);
           profileUpdated = true;
         }
+        // else: no key resolved at all — surfaced as profileError too, since a
+        // signed-in user should always have either BYOK or the shared key.
+        else profileError = true;
       }
     } catch (err) {
+      // Previously swallowed silently — a bad BYOK key (e.g. rotated after
+      // being exposed) or a transient Haiku failure left the profile empty
+      // with no signal to the user. Now surfaced via profileError below.
       console.error("profile parse on upload:", err);
+      profileError = true;
     }
-    return NextResponse.json({ ok: true, chars: content.length, kind, profileUpdated, profileStale });
+    return NextResponse.json({ ok: true, chars: content.length, kind, profileUpdated, profileStale, profileError });
   } catch {
     return NextResponse.json({ error: "Use a .pdf, .docx, .tex, .txt, or .md file." }, { status: 415 });
   }

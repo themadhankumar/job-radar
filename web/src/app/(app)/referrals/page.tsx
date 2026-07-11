@@ -91,10 +91,10 @@ export default function ReferralsPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Referrals</h1>
+        <h1 className="mb-1.5 text-2xl font-semibold tracking-tight">Referrals</h1>
         <button className="btn-primary h-8 px-3 text-xs" onClick={startAdd}>+ Add contact</button>
       </div>
-      <p className="t-muted mb-6 text-sm">
+      <p className="t-muted mb-8 text-sm">
         People who can refer you in. Matched postings on the Radar are pinned to the top and marked <Handshake size={12} className="inline t-ok" />.
       </p>
 
@@ -107,10 +107,10 @@ export default function ReferralsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[rgb(var(--border))] text-left">
-                <th className="t-muted px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em]">Name</th>
-                <th className="t-muted px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em]">Company</th>
-                <th className="t-muted px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em]">Relationship</th>
-                <th className="t-muted px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em]">
+                <th className="t-muted px-5 py-3.5 text-[11px] font-medium uppercase tracking-[0.08em]">Name</th>
+                <th className="t-muted px-5 py-3.5 text-[11px] font-medium uppercase tracking-[0.08em]">Company</th>
+                <th className="t-muted px-5 py-3.5 text-[11px] font-medium uppercase tracking-[0.08em]">Relationship</th>
+                <th className="t-muted px-5 py-3.5 text-[11px] font-medium uppercase tracking-[0.08em]">
                   <span className="inline-flex items-center gap-1">
                     Warmth
                     <span title="Warm = they know you and would gladly refer you. Cold = a distant or one-time connection — worth asking, but not a sure thing.">
@@ -118,17 +118,17 @@ export default function ReferralsPage() {
                     </span>
                   </span>
                 </th>
-                <th className="t-muted px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em]">Status</th>
+                <th className="t-muted px-5 py-3.5 text-[11px] font-medium uppercase tracking-[0.08em]">Status</th>
                 <th className="px-2" />
               </tr>
             </thead>
             <tbody>
               {contacts.map((c) => (
                 <tr key={c.id} className="border-b border-[rgb(var(--hairline)/0.10)] last:border-0">
-                  <td className="px-4 py-2.5 font-medium">{c.name}{c.role && <span className="t-muted font-normal"> · {c.role}</span>}</td>
-                  <td className="px-4 py-2.5">{c.companyName}</td>
-                  <td className="t-muted px-4 py-2.5">{c.relationship}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-5 py-3.5 font-medium">{c.name}{c.role && <span className="t-muted font-normal"> · {c.role}</span>}</td>
+                  <td className="px-5 py-3.5">{c.companyName}</td>
+                  <td className="t-muted px-5 py-3.5">{c.relationship}</td>
+                  <td className="px-5 py-3.5">
                     <select value={c.warmth ?? ""} onChange={(e) => patch(c.id, { warmth: (e.target.value || null) as Contact["warmth"] })}
                       className={`rounded-full border border-transparent bg-[rgb(var(--surface-2))] px-2.5 py-1 text-xs transition-colors duration-150 hover:border-[rgb(var(--border))] ${c.warmth === "warm" ? "t-ok" : c.warmth === "cold" ? "t-muted" : "t-muted"}`}>
                       <option value="">—</option>
@@ -136,7 +136,7 @@ export default function ReferralsPage() {
                       <option value="cold">Cold</option>
                     </select>
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-5 py-3.5">
                     <select value={c.status} onChange={(e) => patch(c.id, { status: e.target.value as Contact["status"] })}
                       className="t-muted rounded-full border border-transparent bg-[rgb(var(--surface-2))] px-2.5 py-1 text-xs transition-colors duration-150 hover:border-[rgb(var(--border))] hover:text-[rgb(var(--text))]">
                       {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
@@ -157,7 +157,7 @@ export default function ReferralsPage() {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div className="surface w-full max-w-md rounded-xl p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="surface w-full max-w-md rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold">{form.id ? "Edit contact" : "Add a referral contact"}</h2>
               <button aria-label="Close" onClick={() => setOpen(false)} className="t-muted hover:text-inherit"><X size={16} /></button>
