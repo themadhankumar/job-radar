@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, Send, Sparkles, ListChecks } from "lucide-react";
+import { Download, Send, Sparkles, ListChecks, X } from "lucide-react";
+import { diffLines, toHunks, changeCounts, type DiffHunk } from "@/lib/diff";
 
 type Msg = { id?: number; role: "user" | "assistant"; content: string };
 type ThreadInfo = {
@@ -29,6 +30,7 @@ export function Studio({ jobId }: { jobId: number }) {
   const [partial, setPartial] = useState("");
   const [threadTokens, setThreadTokens] = useState({ in: 0, out: 0 });
   const [exporting, setExporting] = useState(false);
+  const [diff, setDiff] = useState<{ filename: string; hunks: DiffHunk[]; added: number; removed: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const bootstrappedRef = useRef(false);
 
@@ -140,18 +142,22 @@ export function Studio({ jobId }: { jobId: number }) {
         setError(data.error ?? "Export failed.");
         return;
       }
-      const tin = Number(res.headers.get("X-Tokens-In") ?? 0);
-      const tout = Number(res.headers.get("X-Tokens-Out") ?? 0);
-      setThreadTokens((t) => ({ in: t.in + tin, out: t.out + tout }));
-      const dispo = res.headers.get("Content-Disposition") ?? "";
-      const filename = /filename="([^"]+)"/.exec(dispo)?.[1] ?? "resume-tailored";
-      const blob = await res.blob();
+      const data = await res.json();
+      setThreadTokens((t) => ({ in: t.in + (data.tokensIn ?? 0), out: t.out + (data.tokensOut ?? 0) }));
+      // Download the tailored file
+      const bytes = Uint8Array.from(atob(data.fileB64), (ch) => ch.charCodeAt(0));
+      const blob = new Blob([bytes], { type: data.contentType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = filename;
+      a.download = data.filename;
       a.click();
       URL.revokeObjectURL(url);
+      // Show what changed
+      if (typeof data.oldText === "string" && typeof data.newText === "string") {
+        const lines = diffLines(data.oldText, data.newText);
+        setDiff({ filename: data.filename, hunks: toHunks(lines), ...changeCounts(lines) });
+      }
     } finally {
       setExporting(false);
     }
@@ -182,6 +188,37 @@ export function Studio({ jobId }: { jobId: number }) {
         {error && thread && <p className="text-sm text-red-500">{error}</p>}
         <div ref={bottomRef} />
       </div>
+
+      {diff && (
+        <div className="mt-3 overflow-hidden rounded-xl border border-[rgb(var(--hairline)/0.12)] bg-[rgb(var(--surface-2))]">
+          <div className="flex items-center justify-between gap-2 border-b border-[rgb(var(--hairline)/0.10)] px-3 py-2">
+            <span className="text-xs font-medium">
+              What changed · {diff.filename}
+              <span className="font-data ml-2 text-[rgb(var(--ok))]">+{diff.added}</span>
+              <span className="font-data ml-1.5 text-[rgb(var(--danger))]">−{diff.removed}</span>
+            </span>
+            <button aria-label="Dismiss diff" onClick={() => setDiff(null)} className="t-muted transition-colors duration-150 hover:text-inherit">
+              <X size={13} />
+            </button>
+          </div>
+          <div className="font-data max-h-64 overflow-y-auto p-3 text-[11px] leading-relaxed">
+            {diff.hunks.length === 0 && <p className="t-muted">No text changes — formatting-only export.</p>}
+            {diff.hunks.map((hunk, hi) => (
+              <div key={hi} className={hi > 0 ? "mt-3 border-t border-dashed border-[rgb(var(--hairline)/0.15)] pt-3" : ""}>
+                {hunk.map((l, li) => (
+                  <div key={li} className={
+                    l.kind === "add" ? "whitespace-pre-wrap rounded-sm bg-[rgb(var(--ok)/0.10)] px-1 text-[rgb(var(--ok))]"
+                    : l.kind === "del" ? "whitespace-pre-wrap rounded-sm bg-[rgb(var(--danger)/0.08)] px-1 text-[rgb(var(--danger))] opacity-70"
+                    : "t-muted whitespace-pre-wrap px-1"
+                  }>
+                    {l.kind === "add" ? "+ " : l.kind === "del" ? "− " : "  "}{l.text || " "}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-3 border-t border-[rgb(var(--border))] pt-3">
         <div className="mb-2 flex items-center justify-between gap-2">
