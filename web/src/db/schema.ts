@@ -240,6 +240,8 @@ export const feedback = pgTable("feedback", {
   type: text("type", { enum: ["bug", "idea", "other"] }).default("other").notNull(),
   message: text("message").notNull(),
   pagePath: text("page_path"),
+  imageB64: text("image_b64"),
+  imageMime: text("image_mime"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

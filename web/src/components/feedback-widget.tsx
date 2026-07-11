@@ -1,13 +1,32 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { MessageCircleMore, X } from "lucide-react";
+import { MessageCircleMore, Paperclip, X } from "lucide-react";
 
 const TYPES = [
   { key: "bug", label: "Bug" },
   { key: "idea", label: "Idea" },
   { key: "other", label: "Other" },
 ] as const;
+
+const MAX_DIM = 1400;
+async function downscaleImage(file: File): Promise<{ base64: string; mime: string; previewUrl: string }> {
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = reject;
+    el.src = URL.createObjectURL(file);
+  });
+  const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+  return { base64: dataUrl.split(",")[1], mime: "image/jpeg", previewUrl: dataUrl };
+}
 
 export function FeedbackWidget({ loggedIn = false }: { loggedIn?: boolean }) {
   const pathname = usePathname();
@@ -18,6 +37,8 @@ export function FeedbackWidget({ loggedIn = false }: { loggedIn?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState("");
+  const [image, setImage] = useState<{ base64: string; mime: string; previewUrl: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   function reset() {
     setOpen(false);
@@ -26,6 +47,19 @@ export function FeedbackWidget({ loggedIn = false }: { loggedIn?: boolean }) {
     setEmail("");
     setSent(false);
     setErr("");
+    setImage(null);
+  }
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setErr("That's not an image."); return; }
+    try {
+      setImage(await downscaleImage(file));
+    } catch {
+      setErr("Couldn't read that image — try another.");
+    }
   }
 
   async function submit() {
@@ -35,7 +69,10 @@ export function FeedbackWidget({ loggedIn = false }: { loggedIn?: boolean }) {
     const res = await fetch("/api/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, message, email: email || undefined, pagePath: pathname }),
+      body: JSON.stringify({
+        type, message, email: email || undefined, pagePath: pathname,
+        imageB64: image?.base64, imageMime: image?.mime,
+      }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -80,6 +117,20 @@ export function FeedbackWidget({ loggedIn = false }: { loggedIn?: boolean }) {
                   className="input mb-2 min-h-24 w-full text-sm"
                   autoFocus
                 />
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickFile} />
+                {image ? (
+                  <div className="relative mb-2 inline-block">
+                    <img src={image.previewUrl} alt="Screenshot preview" className="h-16 rounded-md border border-[rgb(var(--border))] object-cover" />
+                    <button aria-label="Remove screenshot" onClick={() => setImage(null)}
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))] shadow hover:text-[rgb(var(--danger))]">
+                      <X size={11} />
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => fileRef.current?.click()} className="chip t-muted mb-2 transition-colors duration-150 hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]">
+                    <Paperclip size={12} /> Attach a screenshot
+                  </button>
+                )}
                 {!loggedIn && (
                   <input
                     value={email}
