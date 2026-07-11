@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton, ThemeToggle } from "@/components/shell-actions";
 import { useEffect, useState } from "react";
-import { Radar, Building2, Target, FileText, UserRound, Settings, MoreHorizontal } from "lucide-react";
+import { Radar, Building2, Target, FileText, UserRound, Settings, Handshake, MoreHorizontal } from "lucide-react";
 
 const PRIMARY = [
   { href: "/radar", label: "Radar", icon: Radar },
@@ -13,6 +13,7 @@ const PRIMARY = [
 
 const MORE = [
   { href: "/resume", label: "Resume", icon: FileText },
+  { href: "/referrals", label: "Referrals", icon: Handshake },
   { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;

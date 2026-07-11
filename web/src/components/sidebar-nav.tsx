@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Radar, Building2, Target, FileText, UserRound, Settings } from "lucide-react";
+import { Radar, Building2, Target, FileText, UserRound, Settings, Handshake } from "lucide-react";
 
 const NAV = [
   { href: "/radar", label: "Radar", icon: Radar },
   { href: "/companies", label: "Companies", icon: Building2 },
+  { href: "/referrals", label: "Referrals", icon: Handshake },
   { href: "/roles", label: "Roles", icon: Target },
   { href: "/resume", label: "Resume", icon: FileText },
   { href: "/profile", label: "Profile", icon: UserRound },
