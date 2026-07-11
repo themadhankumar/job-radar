@@ -58,7 +58,7 @@ export function AddByUrl() {
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={reset}>
-          <div className="surface w-full max-w-md rounded-xl p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="surface w-full max-w-md rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="mb-1 text-sm font-semibold">Add a job by URL</h2>
             <p className="t-muted mb-4 text-xs leading-relaxed">
               {phase === "paste"

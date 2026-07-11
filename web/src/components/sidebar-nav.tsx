@@ -16,7 +16,7 @@ const NAV = [
 export function SidebarNav() {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-1 flex-col gap-1">
+    <nav className="flex flex-1 flex-col gap-1.5">
       {NAV.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(href + "/");
         return (
@@ -24,7 +24,7 @@ export function SidebarNav() {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+            className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
               active
                 ? "bg-[rgb(var(--accent)/0.10)] text-[rgb(var(--accent))]"
                 : "t-muted hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"

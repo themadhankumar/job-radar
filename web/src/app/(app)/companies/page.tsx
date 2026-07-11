@@ -62,19 +62,19 @@ export default function CompaniesPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-1 text-2xl font-semibold tracking-tight">Companies</h1>
-      <p className="t-muted mb-6 text-sm">Your watchlist drives what the radar fetches. Add anything — the job board is detected automatically.</p>
+      <h1 className="mb-1.5 text-2xl font-semibold tracking-tight">Companies</h1>
+      <p className="t-muted mb-8 text-sm">Your watchlist drives what the radar fetches. Add anything — the job board is detected automatically.</p>
 
-      <div className="mb-6 flex gap-2">
+      <div className="mb-8 flex gap-2">
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Add a company (e.g. Databricks)"
           className="input" onKeyDown={(e) => e.key === "Enter" && input.trim() && add(input.trim())} />
         <button className="btn-primary" disabled={busy || !input.trim()} onClick={() => add(input.trim())}>
           {busy ? "Detecting…" : "Add"}
         </button>
       </div>
-      {msg && <p className="t-accent -mt-4 mb-4 text-sm">{msg}</p>}
+      {msg && <p className="t-accent -mt-6 mb-6 text-sm">{msg}</p>}
 
-      <section className="surface mb-6 rounded-xl p-4">
+      <section className="surface mb-8 rounded-xl p-5">
         <div className="flex items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold">✦ Suggest companies</h2>
@@ -102,13 +102,13 @@ export default function CompaniesPage() {
         )}
       </section>
 
-      <section className="surface mb-6 rounded-xl">
-        <h2 className="t-muted border-b border-[rgb(var(--hairline)/0.10)] px-4 py-2.5 text-xs font-medium uppercase tracking-wide">
+      <section className="surface mb-8 rounded-xl">
+        <h2 className="t-muted border-b border-[rgb(var(--hairline)/0.10)] px-5 py-3.5 text-xs font-medium uppercase tracking-wide">
           Watching ({tracked.length})
         </h2>
         {tracked.length === 0 && <p className="t-muted p-4 text-sm">Nothing yet — add a company above or pick from the registry below.</p>}
         {tracked.map((c) => (
-          <div key={c.id} className="flex items-center justify-between border-b border-[rgb(var(--hairline)/0.10)] px-4 py-2.5 last:border-0">
+          <div key={c.id} className="flex items-center justify-between border-b border-[rgb(var(--hairline)/0.10)] px-5 py-3.5 last:border-0">
             <span className="text-sm font-medium">{c.name} <span className="chip t-muted ml-2">{c.ats}</span>{c.hasReferral && <span className="chip t-ok ml-1.5 border-[rgb(var(--ok)/0.35)]" title="You have a referral contact here">🤝 Referral</span>}</span>
             <button aria-label={`Stop watching ${c.name}`} className="t-muted rounded p-1.5 transition-colors duration-150 hover:text-[rgb(var(--danger))]" onClick={() => remove(c.id)}>
               <Trash2 size={15} />

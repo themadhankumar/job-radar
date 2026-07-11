@@ -96,7 +96,7 @@ export function ProfileManager() {
   if (!loaded) return <p className="t-muted text-sm">Loading…</p>;
 
   return (
-    <section className="surface rounded-xl p-5">
+    <section className="surface rounded-xl p-6">
       <div className="mb-4 flex items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold">Parsed profile {edited && <span className="chip ml-1">hand-edited</span>}</h2>
