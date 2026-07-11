@@ -28,15 +28,15 @@
 }
 
 .dark {
-  --bg: 12 10 20;           /* ink, violet cast */
-  --surface: 19 16 32;
-  --surface-2: 26 23 48;
-  --border: 42 38 69;
-  --hairline: 165 160 200;
-  --text: 234 232 244;
-  --muted: 145 141 169;
-  --accent: 139 124 255;    /* signal violet */
-  --accent-soft: 39 33 78;
+  --bg: 8 8 11;             /* near-black, faint cool cast (Linear-ish) */
+  --surface: 15 15 19;
+  --surface-2: 22 22 28;    /* raised layer, neutral grey */
+  --border: 36 36 43;
+  --hairline: 180 180 195;
+  --text: 237 237 242;
+  --muted: 138 138 150;     /* neutral grey, not lavender */
+  --accent: 139 124 255;    /* signal violet — rationed to accents only */
+  --accent-soft: 32 30 52;
   --ok: 52 211 153;
   --danger: 251 113 133;
   --glow: 139 124 255;
@@ -49,7 +49,7 @@ body {
 }
 .dark body {
   /* faint violet bloom at the top of the ink */
-  background-image: radial-gradient(1100px 620px at 50% -12%, rgb(var(--glow) / 0.045), transparent 70%);
+  background-image: radial-gradient(1100px 620px at 50% -12%, rgb(var(--glow) / 0.03), transparent 70%);
   background-attachment: fixed;
 }
 
