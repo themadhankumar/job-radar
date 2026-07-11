@@ -1,0 +1,142 @@
+"use client";
+import { useEffect, useState } from "react";
+
+/* Linear-style product fragments: crafted UI slices, faded into the ink. */
+
+const ROWS = [
+  { score: 61, tier: "score-hi", role: "Technical Program Manager, Enterprise", company: "Anthropic", loc: "San Francisco, CA", posted: "2h" },
+  { score: 57, tier: "score-hi", role: "Senior TPM, Robotics", company: "Figure", loc: "San Jose, CA", posted: "4h" },
+  { score: 54, tier: "score-hi", role: "Product Manager, Core Models", company: "OpenAI", loc: "Remote, US", posted: "1d" },
+  { score: 46, tier: "score-hi", role: "AI Data Product Manager", company: "Scale AI", loc: "New York, NY", posted: "1d" },
+  { score: 38, tier: "score-mid", role: "Program Manager, Evaluation", company: "Samsara", loc: "Remote, US", posted: "2d" },
+  { score: 29, tier: "score-low", role: "Data Operations Lead", company: "Mercor", loc: "San Francisco, CA", posted: "3d" },
+];
+
+const NAV = ["Radar", "Companies", "Roles", "Resume", "Profile", "Settings"];
+
+/* Full app frame: sidebar + radar table, bottom-faded like Linear's hero shots. */
+export function HeroAppFrame() {
+  const [visible, setVisible] = useState(0);
+  useEffect(() => {
+    const timers = ROWS.map((_, i) => setTimeout(() => setVisible(i + 1), 400 + i * 160));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+  return (
+    <div className="relative">
+      <div className="surface overflow-hidden rounded-xl shadow-[0_0_80px_rgb(var(--glow)/0.08)]">
+        <div className="flex">
+          {/* Sidebar */}
+          <aside className="hidden w-40 shrink-0 border-r border-[rgb(var(--hairline)/0.10)] p-3 sm:block">
+            <div className="mb-4 flex items-center gap-1.5 px-2 text-xs font-semibold">
+              <span className="relative inline-flex h-3.5 w-3.5">
+                <span className="absolute inset-0 rounded-full border-2 border-[rgb(var(--accent))]" />
+                <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgb(var(--accent))]" />
+              </span>
+              Job Radar
+            </div>
+            {NAV.map((n, i) => (
+              <p key={n} className={`rounded px-2 py-1.5 text-[11px] font-medium ${i === 0 ? "t-accent bg-[rgb(var(--accent)/0.08)]" : "t-muted"}`}>{n}</p>
+            ))}
+          </aside>
+          {/* Radar */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between border-b border-[rgb(var(--hairline)/0.10)] px-4 py-2.5">
+              <div className="flex gap-1 text-[11px]">
+                <span className="t-muted rounded px-2 py-0.5">Tracked</span>
+                <span className="t-accent rounded bg-[rgb(var(--accent)/0.10)] px-2 py-0.5 font-medium">Suggested</span>
+                <span className="t-muted rounded px-2 py-0.5">Global</span>
+              </div>
+              <span className="font-data t-muted text-[11px]">swept 2h ago</span>
+            </div>
+            <table className="w-full text-[13px]">
+              <tbody>
+                {ROWS.map((r, i) => (
+                  <tr key={r.role} className="border-b border-[rgb(var(--hairline)/0.08)] transition-opacity duration-300 last:border-0" style={{ opacity: i < visible ? 1 : 0 }}>
+                    <td className={`${r.tier} font-data w-12 py-2.5 pl-4 text-xs tabular-nums`}>{r.score}%</td>
+                    <td className="max-w-0 truncate py-2.5 pr-3 font-medium">{r.role}</td>
+                    <td className="t-muted hidden py-2.5 pr-3 md:table-cell">{r.company}</td>
+                    <td className="t-muted hidden py-2.5 pr-3 text-xs lg:table-cell">{r.loc}</td>
+                    <td className="t-muted py-2.5 pr-4 text-right text-xs">{r.posted}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {/* Linear-style bottom fade into the page */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[rgb(var(--bg))] to-transparent" />
+    </div>
+  );
+}
+
+/* Match drawer fragment: score arc + component bars + boost chips. */
+const COMPONENTS: [string, number][] = [["Skills", 72], ["Role", 84], ["Work", 58], ["Experience", 65], ["Industry", 70]];
+
+export function MatchFragment() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) { setOn(true); io.disconnect(); } }, { threshold: 0.4 });
+    const el = document.getElementById("match-frag");
+    if (el) io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const r = 26, c = 2 * Math.PI * r;
+  return (
+    <div id="match-frag" className="surface rounded-xl p-5">
+      <div className="flex items-center gap-4">
+        <div className="relative h-16 w-16 shrink-0">
+          <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
+            <circle cx="32" cy="32" r={r} fill="none" strokeWidth="4" className="stroke-[rgb(var(--hairline)/0.12)]" />
+            <circle cx="32" cy="32" r={r} fill="none" strokeWidth="4" strokeLinecap="round"
+              className="stroke-[rgb(var(--accent))] transition-[stroke-dashoffset] duration-[900ms] ease-[var(--ease)]"
+              style={{ strokeDasharray: c, strokeDashoffset: on ? c - (c * 61) / 100 : c }} />
+          </svg>
+          <span className="score-hi font-data absolute inset-0 flex items-center justify-center text-sm">61</span>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Technical Program Manager, Enterprise</p>
+          <p className="t-muted text-xs">Anthropic · San Francisco, CA</p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        {COMPONENTS.map(([label, v], i) => (
+          <div key={label} className="flex items-center gap-3">
+            <span className="t-muted w-20 text-[11px]">{label}</span>
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
+              <div className="h-full rounded-full bg-[rgb(var(--accent))] transition-[width] duration-700 ease-[var(--ease)]"
+                style={{ width: on ? `${v}%` : "0%", transitionDelay: `${i * 90}ms` }} />
+            </div>
+            <span className="font-data t-muted w-7 text-right text-[11px]">{v}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {["evaluation pipelines", "RLHF", "data engine"].map((t) => (
+          <span key={t} className="chip t-muted border-dashed text-[11px]">+ {t}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Studio fragment: chat exchange + export diff. */
+export function StudioFragment() {
+  return (
+    <div className="surface space-y-3 rounded-xl p-5">
+      <div className="ml-auto max-w-[85%] rounded-lg bg-[rgb(var(--accent)/0.12)] px-3 py-2 text-[13px]">
+        Tailor my resume for this posting — emphasize the annotation platform work.
+      </div>
+      <div className="max-w-[85%] rounded-lg bg-[rgb(var(--surface-2))] px-3 py-2 text-[13px]">
+        Done. I led with the clinical annotation pipeline, quantified the reviewer
+        throughput gain, and moved the ML-platform migration up. Diff below.
+      </div>
+      <div className="font-data rounded-lg border border-[rgb(var(--hairline)/0.12)] bg-[rgb(var(--surface-2))] p-3 text-[11px] leading-relaxed">
+        <p className="t-muted mb-1.5">resume-anthropic-tpm.tex · <span className="text-[rgb(var(--ok))]">+6</span> <span className="text-[rgb(var(--danger))]">−4</span></p>
+        <p className="rounded-sm bg-[rgb(var(--danger)/0.08)] px-1 text-[rgb(var(--danger))] opacity-70">− Managed data annotation workflows</p>
+        <p className="rounded-sm bg-[rgb(var(--ok)/0.10)] px-1 text-[rgb(var(--ok))]">+ Built the clinical annotation engine scoring 40k charts/mo</p>
+        <p className="rounded-sm bg-[rgb(var(--ok)/0.10)] px-1 text-[rgb(var(--ok))]">+ Cut specialist review time 38% via HITL routing</p>
+      </div>
+    </div>
+  );
+}

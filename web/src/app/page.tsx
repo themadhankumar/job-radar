@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { Logo } from "@/components/logo";
-import { LandingHeroTable, LandingSweepLog } from "@/components/landing-hero-table";
+import { LandingSweepLog } from "@/components/landing-hero-table";
+import { HeroAppFrame, MatchFragment, StudioFragment } from "@/components/landing-fragments";
 import { getSessionUser } from "@/lib/auth";
 
 export const revalidate = 3600;
@@ -55,7 +56,7 @@ export default async function Landing() {
           </div>
         </div>
         <div className="mt-10">
-          <LandingHeroTable />
+          <HeroAppFrame />
         </div>
         <div className="font-data t-muted mt-5 flex flex-wrap gap-x-8 gap-y-2 text-xs">
           <span><span className="t-accent">{fmt(s.jobs)}</span> postings swept</span>
@@ -67,7 +68,7 @@ export default async function Landing() {
       {/* The sweep — pipeline made visible */}
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-6 pt-28 sm:grid-cols-2">
         <div>
-          <p className="font-data t-accent mb-3 text-xs uppercase tracking-widest">The sweep</p>
+          <p className="font-data t-muted mb-3 text-xs">01 <span className="t-accent">Sweep →</span></p>
           <h2 className="text-2xl font-semibold tracking-tight">Runs while you sleep.<br />And while you don&apos;t.</h2>
           <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
             A pipeline pulls Greenhouse, Lever, Ashby, Workday, and LinkedIn into one
@@ -79,24 +80,33 @@ export default async function Landing() {
         <LandingSweepLog />
       </section>
 
-      {/* The studio — tailor + prove it */}
-      <section className="mx-auto max-w-5xl px-6 pt-28">
-        <p className="font-data t-accent mb-3 text-xs uppercase tracking-widest">The studio</p>
-        <div className="grid gap-10 sm:grid-cols-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Your resume, rewritten per job. With receipts.</h2>
-          <div className="t-muted space-y-4 text-sm leading-relaxed">
-            <p>
-              Every job opens into a chat that knows the posting and your resume. It runs
-              a gap analysis, drafts your screener answers — sponsorship phrasing included —
-              and exports a tailored .tex or .docx.
-            </p>
-            <p>
-              Every export ships with a line-by-line diff, so you see exactly what changed
-              before it leaves with your name on it. A low match % isn&apos;t a verdict either:
-              it opens into five components with the exact terms you&apos;re missing.
-            </p>
-          </div>
+      {/* The score — explainability fragment */}
+      <section className="mx-auto grid max-w-5xl items-center gap-10 px-6 pt-28 sm:grid-cols-2">
+        <MatchFragment />
+        <div className="sm:order-first">
+          <p className="font-data t-muted mb-3 text-xs">02 <span className="t-accent">Score →</span></p>
+          <h2 className="text-2xl font-semibold tracking-tight">One number.<br />Five reasons. Zero mystery.</h2>
+          <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
+            Every match % opens into its five weighted components — skills, role, work
+            history, experience fit, industry — with the exact terms your resume is
+            missing. A low score is a to-do list, not a verdict.
+          </p>
         </div>
+      </section>
+
+      {/* The studio — chat + diff fragment */}
+      <section className="mx-auto grid max-w-5xl items-center gap-10 px-6 pt-28 sm:grid-cols-2">
+        <div>
+          <p className="font-data t-muted mb-3 text-xs">03 <span className="t-accent">Tailor →</span></p>
+          <h2 className="text-2xl font-semibold tracking-tight">Your resume, rewritten per job. With receipts.</h2>
+          <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
+            Every job opens into a chat that knows the posting and your resume. It runs a
+            gap analysis, drafts your screener answers — sponsorship phrasing included —
+            and exports a tailored .tex or .docx with a line-by-line diff, so you see
+            exactly what changed before it leaves with your name on it.
+          </p>
+        </div>
+        <StudioFragment />
       </section>
 
       {/* Stance */}
