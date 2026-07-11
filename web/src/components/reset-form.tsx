@@ -53,7 +53,7 @@ export function ResetForm() {
             name="confirm" type="password" required minLength={8}
             placeholder="Confirm new password" className="input" autoComplete="new-password"
           />
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-[rgb(var(--danger))]">{error}</p>}
           <button disabled={loading} className="btn-primary w-full">
             {loading ? "One moment…" : "Set new password"}
           </button>
