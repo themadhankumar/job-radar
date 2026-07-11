@@ -6,7 +6,7 @@ import { Logo } from "@/components/logo";
 import { LandingSweepLog } from "@/components/landing-hero-table";
 import {
   HeroAppFrame, MatchFragment, StudioFragment,
-  SponsorFragment, AddUrlFragment, DigestFragment,
+  SponsorFragment, AddUrlFragment, DigestFragment, ReferralFragment,
 } from "@/components/landing-fragments";
 import { getSessionUser } from "@/lib/auth";
 import { FeedbackWidget } from "@/components/feedback-widget";
@@ -123,17 +123,31 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* 05 — two small fragments side by side, breaks the rhythm */}
+      {/* 05 Referrals — copy left, fragment right */}
+      <section className="mx-auto grid max-w-5xl items-center gap-10 px-6 pt-32 sm:grid-cols-[0.9fr_1.1fr]">
+        <div>
+          <Label n="05">Referrals</Label>
+          <h2 className="text-2xl font-semibold tracking-tight">A warm intro beats<br />a cold application.</h2>
+          <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
+            Log the people who can refer you — a friend, a former colleague, family. When a
+            posting from their company hits your radar, it&apos;s pinned to the top and marked,
+            so you never miss the one job you actually have a way into.
+          </p>
+        </div>
+        <ReferralFragment />
+      </section>
+
+      {/* 06 — two small fragments side by side, breaks the rhythm */}
       <section className="mx-auto max-w-5xl px-6 pt-32">
         <div className="grid gap-10 sm:grid-cols-2">
           <div>
-            <Label n="05">Add by URL</Label>
+            <Label n="06">Add by URL</Label>
             <h3 className="text-lg font-semibold tracking-tight">A recruiter DM&apos;d you a link?</h3>
             <p className="t-muted mt-3 text-sm leading-relaxed">Paste it. Parsed, scored, and studio-ready — even from boards that block scrapers.</p>
             <div className="mt-5"><AddUrlFragment /></div>
           </div>
           <div>
-            <Label n="06">Daily digest</Label>
+            <Label n="07">Daily digest</Label>
             <h3 className="text-lg font-semibold tracking-tight">One email at 6 PM. Not fifty tabs.</h3>
             <p className="t-muted mt-3 text-sm leading-relaxed">The day&apos;s new matches, ranked, in your inbox. Stop refreshing job boards.</p>
             <div className="mt-5"><DigestFragment /></div>

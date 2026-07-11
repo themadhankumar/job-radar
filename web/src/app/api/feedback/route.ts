@@ -4,6 +4,10 @@ import { getSessionUser } from "@/lib/auth";
 import { rateLimit, clientIp, RATE_LIMITED } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 const TYPES = new Set(["bug", "idea", "other"]);
 const TYPE_LABEL: Record<string, string> = { bug: "Bug", idea: "Idea", other: "Other" };
 
@@ -46,7 +50,7 @@ export async function POST(req: Request) {
     await sendEmail(
       notifyTo,
       `[Job Radar] ${TYPE_LABEL[type]} feedback`,
-      `<p><strong>${TYPE_LABEL[type]}</strong> from ${from}${pagePath ? ` on <code>${pagePath}</code>` : ""}</p><p>${message.replace(/\n/g, "<br/>")}</p>${imageB64 ? "<p>(screenshot attached)</p>" : ""}`,
+      `<p><strong>${TYPE_LABEL[type]}</strong> from ${esc(from)}${pagePath ? ` on <code>${esc(pagePath)}</code>` : ""}</p><p>${esc(message).replace(/\n/g, "<br/>")}</p>${imageB64 ? "<p>(screenshot attached)</p>" : ""}`,
       imageB64 ? [{ filename: `screenshot.${ext}`, content: imageB64 }] : undefined,
     ).catch((e) => console.error("[feedback email]", e));
   }
