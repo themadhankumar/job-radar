@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { ProductTour } from "@/components/product-tour";
+import { CompanyTypeahead } from "@/components/company-typeahead";
 
 type Suggested = { id: number; name: string; ats: string };
 type Picked = { id?: number; name: string; ats?: string; slug?: string; list: "dream" | "watch" };
@@ -92,8 +93,8 @@ export default function Onboarding() {
     );
   }
 
-  async function addCustomCompany() {
-    const name = companyInput.trim();
+  async function addCustomCompany(explicitName?: string) {
+    const name = (explicitName ?? companyInput).trim();
     if (!name || picked.some((p) => p.name.toLowerCase() === name.toLowerCase())) return;
     setDetecting(true);
     setError("");
@@ -220,16 +221,17 @@ export default function Onboarding() {
                 <div className="flex flex-wrap gap-1.5">
                   {suggestedFromResume.filter((n) => !picked.some((p) => p.name.toLowerCase() === n.toLowerCase())).map((n) => (
                     <button key={n} className="chip t-accent border-[rgb(var(--accent))]/40 hover:border-[rgb(var(--accent))]"
-                      onClick={() => { setCompanyInput(n); }}>✦ {n}</button>
+                      onClick={() => addCustomCompany(n)}>✦ {n}</button>
                   ))}
                 </div>
               </div>
             )}
-            <div className="flex gap-2">
-              <input value={companyInput} onChange={(e) => setCompanyInput(e.target.value)} placeholder="Add a company (e.g. Databricks)"
-                className="input" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomCompany())} />
-              <button className="btn-ghost" disabled={detecting} onClick={addCustomCompany}>{detecting ? "Detecting…" : "Add"}</button>
-            </div>
+            <CompanyTypeahead
+              registry={suggested.filter((c) => !picked.some((p) => p.id === c.id)).map((c) => ({ id: c.id, name: c.name, ats: c.ats }))}
+              onPickRegistry={(item) => { if (item.id != null) toggleSuggested({ id: item.id, name: item.name, ats: item.ats ?? "" }); }}
+              onAddCustom={(name) => addCustomCompany(name)}
+              busy={detecting}
+            />
             {picked.filter((p) => !p.id).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {picked.filter((p) => !p.id).map((p) => (

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { CompanyTypeahead } from "@/components/company-typeahead";
 
 type Company = { id: number; name: string; ats: string; hasReferral?: boolean };
 type Mine = { companyId: number; list: string };
@@ -8,7 +9,6 @@ type Mine = { companyId: number; list: string };
 export default function CompaniesPage() {
   const [all, setAll] = useState<Company[]>([]);
   const [mine, setMine] = useState<Mine[]>([]);
-  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [suggestions, setSuggestions] = useState<{ name: string; reason: string }[]>([]);
@@ -47,7 +47,6 @@ export default function CompaniesPage() {
     if (!res.ok) { setMsg(data.error ?? "Could not add that company."); return; }
     if (!companyId) setMsg(data.ats === "linkedin" ? `${name}: no public job board found — covered via the LinkedIn feed.` : `${name}: ${data.ats} board detected ✓${data.jobsFetched ? ` — ${data.jobsFetched} postings pulled into your radar now` : ""}`);
     else setMsg(data.jobsFetched ? `${name}: ${data.jobsFetched} new postings pulled into your radar now.` : `${name} added — postings appear after the next sweep (already-known ones are there now).`);
-    setInput("");
     load();
   }
 
@@ -65,12 +64,13 @@ export default function CompaniesPage() {
       <h1 className="mb-1.5 text-2xl font-semibold tracking-tight">Companies</h1>
       <p className="t-muted mb-8 text-sm">Your watchlist drives what the radar fetches. Add anything — the job board is detected automatically.</p>
 
-      <div className="mb-8 flex gap-2">
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Add a company (e.g. Databricks)"
-          className="input" onKeyDown={(e) => e.key === "Enter" && input.trim() && add(input.trim())} />
-        <button className="btn-primary" disabled={busy || !input.trim()} onClick={() => add(input.trim())}>
-          {busy ? "Detecting…" : "Add"}
-        </button>
+      <div className="mb-8">
+        <CompanyTypeahead
+          registry={available.map((c) => ({ id: c.id, name: c.name, ats: c.ats }))}
+          onPickRegistry={(item) => add(item.name, item.id)}
+          onAddCustom={(name) => add(name)}
+          busy={busy}
+        />
       </div>
       {msg && <p className="t-accent -mt-6 mb-6 text-sm">{msg}</p>}
 
