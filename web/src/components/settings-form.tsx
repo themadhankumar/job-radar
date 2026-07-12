@@ -36,11 +36,20 @@ function Row({ label, hint, children }: { label: string; hint: string; children:
   );
 }
 
+const DIGEST_SOURCES = [
+  { key: "greenhouse", label: "Greenhouse" },
+  { key: "lever", label: "Lever" },
+  { key: "ashby", label: "Ashby" },
+  { key: "workday", label: "Workday" },
+  { key: "linkedin", label: "LinkedIn" },
+];
+
 export function SettingsForm(props: {
   digestEnabled: boolean;
   needsSponsorship: boolean;
   usOnly: boolean;
   suggestedThreshold: number;
+  digestSources: string[];
   hasKey: boolean;
   hasNotion: boolean;
   notionDatabaseId: string;
@@ -50,6 +59,7 @@ export function SettingsForm(props: {
   const [sponsor, setSponsor] = useState(props.needsSponsorship);
   const [usOnly, setUsOnly] = useState(props.usOnly);
   const [threshold, setThreshold] = useState(props.suggestedThreshold);
+  const [sources, setSources] = useState<string[]>(props.digestSources);
   const [apiKey, setApiKey] = useState("");
   const [notionToken, setNotionToken] = useState("");
   const [notionDb, setNotionDb] = useState(props.notionDatabaseId);
@@ -81,6 +91,31 @@ export function SettingsForm(props: {
           <Row label="Daily email digest at 6 PM" hint="New matches from the last 24 hours, delivered once a day.">
             <Switch checked={digest} onChange={(v) => { setDigest(v); save({ digestEnabled: v }, "Digest preference"); }} />
           </Row>
+          {digest && (
+            <div className="py-3">
+              <p className="text-sm">Notify me from</p>
+              <p className="t-muted mb-2 text-xs">Only jobs from these boards appear in your digest email.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {DIGEST_SOURCES.map((s) => {
+                  const on = sources.includes(s.key);
+                  return (
+                    <button key={s.key}
+                      className={`chip transition-colors duration-150 ${on ? "border-[rgb(var(--accent))] t-accent" : "t-muted hover:border-[rgb(var(--accent))]"}`}
+                      onClick={() => {
+                        // Never let the last one be turned off — an empty filter
+                        // would silently mute the digest with no visible reason.
+                        const next = on ? sources.filter((x) => x !== s.key) : [...sources, s.key];
+                        if (next.length === 0) return;
+                        setSources(next);
+                        save({ digestSources: next }, "Digest sources");
+                      }}>
+                      {on ? "✓ " : ""}{s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <Row label="I need visa sponsorship" hint="Shows employer sponsorship signals on job details.">
             <Switch checked={sponsor} onChange={(v) => { setSponsor(v); save({ needsSponsorship: v }, "Sponsorship preference"); }} />
           </Row>

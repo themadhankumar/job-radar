@@ -74,7 +74,7 @@ def main() -> int:
     sent = 0
     for user in dbm.users_for_digest(conn):
         since = dbm.last_digest_at(conn, user["id"]) or (dbm.utcnow() - timedelta(hours=24))
-        jobs = dbm.user_matched_jobs_since(conn, user["id"], since)
+        jobs = dbm.user_matched_jobs_since(conn, user["id"], since, user.get("digest_sources"))
         if user.get("us_only"):
             jobs = [j for j in jobs if j.get("country") != "intl"]
         if not jobs:

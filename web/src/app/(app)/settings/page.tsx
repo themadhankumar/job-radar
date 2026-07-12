@@ -17,6 +17,7 @@ export default async function SettingsPage() {
         digestEnabled={user.digestEnabled}
         usOnly={user.usOnly}
         suggestedThreshold={user.suggestedThreshold ?? 35}
+        digestSources={user.digestSources ?? ["greenhouse","lever","ashby","workday","linkedin"]}
         needsSponsorship={user.needsSponsorship}
         hasKey={Boolean(user.anthropicKeyEnc)}
         hasNotion={Boolean(user.notionTokenEnc)}

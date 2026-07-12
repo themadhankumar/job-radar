@@ -22,6 +22,13 @@ export async function POST(req: Request) {
     set.notionTokenEnc = body.notionToken.trim() ? encrypt(body.notionToken.trim()) : null;
   }
   if (typeof body.notionDatabaseId === "string") set.notionDatabaseId = body.notionDatabaseId.trim() || null;
+  if (Array.isArray(body.digestSources)) {
+    const ALLOWED = ["greenhouse", "lever", "ashby", "workday", "linkedin"];
+    const clean = [...new Set(body.digestSources)].filter((s) => ALLOWED.includes(s as string));
+    // Empty would silently mute the digest entirely with no obvious cause; keep
+    // at least all-on rather than persisting an empty filter.
+    set.digestSources = clean.length ? clean : ALLOWED;
+  }
   if (Object.keys(set).length === 0) return NextResponse.json({ error: "Nothing to save." }, { status: 400 });
   await db.update(schema.users).set(set).where(eq(schema.users.id, uid));
   return NextResponse.json({ ok: true });
