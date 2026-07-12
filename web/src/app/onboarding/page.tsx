@@ -7,10 +7,14 @@ import { ProductTour } from "@/components/product-tour";
 type Suggested = { id: number; name: string; ats: string };
 type Picked = { id?: number; name: string; ats?: string; slug?: string; list: "dream" | "watch" };
 
-const DEFAULT_KEYWORDS = [
-  "ai data product manager", "data operations", "annotation",
-  "technical program manager", "ml platform", "human in the loop",
-  "data engine", "evaluation",
+// Role-neutral fallback shown only when there's no resume to suggest from (or
+// the suggestion call fails). These are generic starting points across common
+// job families — NOT tied to any one field — so a marketing hire and a data PM
+// both see something sensible. When a resume exists, we auto-suggest from it
+// instead (see the effect in step 1).
+const FALLBACK_KEYWORDS = [
+  "product manager", "program manager", "engineer", "analyst",
+  "designer", "marketing", "operations", "data",
 ];
 
 export default function Onboarding() {
@@ -30,6 +34,7 @@ export default function Onboarding() {
   const [companyInput, setCompanyInput] = useState("");
   const [suggestedFromResume, setSuggestedFromResume] = useState<string[]>([]);
   const [detecting, setDetecting] = useState(false);
+  const [autoSuggested, setAutoSuggested] = useState(false);
   // step 4 — sponsorship
   const [needsSponsorship, setNeedsSponsorship] = useState(false);
 
@@ -39,6 +44,27 @@ export default function Onboarding() {
       .then((d) => setSuggested(d.all ?? []))
       .catch(() => {});
   }, []);
+
+  async function runSuggest() {
+    setBusy(true); setError("");
+    const r = await fetch("/api/onboarding/suggest", { method: "POST" });
+    const d = await r.json(); setBusy(false);
+    if (!r.ok) { setError(d.error ?? "No suggestions available."); return false; }
+    setKeywords((k) => [...new Set([...k, ...d.keywords])]);
+    if (d.companies?.length) setSuggestedFromResume(d.companies);
+    return true;
+  }
+
+  // When the user reaches the Roles step with a resume uploaded, auto-suggest
+  // keywords from THEIR resume once — so the chips reflect them, not a canned
+  // list. Runs a single time; they can still edit freely afterward.
+  useEffect(() => {
+    if (step === 1 && resumeName && !autoSuggested && keywords.length === 0) {
+      setAutoSuggested(true);
+      runSuggest();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, resumeName]);
 
   async function uploadResume(file: File) {
     setBusy(true);
@@ -144,22 +170,17 @@ export default function Onboarding() {
             <p className="t-muted mb-4 mt-1 text-sm">Jobs matching any of these keywords surface on your radar.</p>
             {resumeName && (
               <button className="btn-ghost mb-3 text-[rgb(var(--accent))]" disabled={busy}
-                onClick={async () => {
-                  setBusy(true); setError("");
-                  const r = await fetch("/api/onboarding/suggest", { method: "POST" });
-                  const d = await r.json(); setBusy(false);
-                  if (!r.ok) { setError(d.error ?? "No suggestions available."); return; }
-                  setKeywords((k) => [...new Set([...k, ...d.keywords])]);
-                  if (d.companies?.length) setSuggestedFromResume(d.companies);
-                }}>
-                {busy ? "Reading your resume…" : "✦ Suggest from my resume"}
+                onClick={() => runSuggest()}>
+                {busy ? "Reading your resume…" : autoSuggested ? "✦ Re-suggest from my resume" : "✦ Suggest from my resume"}
               </button>
             )}
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {DEFAULT_KEYWORDS.filter((k) => !keywords.includes(k)).map((k) => (
-                <button key={k} className="chip t-muted hover:border-[rgb(var(--accent))]" onClick={() => setKeywords([...keywords, k])}>+ {k}</button>
-              ))}
-            </div>
+            {(!resumeName || (autoSuggested && !busy && keywords.length === 0)) && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {FALLBACK_KEYWORDS.filter((k) => !keywords.includes(k)).map((k) => (
+                  <button key={k} className="chip t-muted hover:border-[rgb(var(--accent))]" onClick={() => setKeywords([...keywords, k])}>+ {k}</button>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2">
               <input value={kwInput} onChange={(e) => setKwInput(e.target.value)} placeholder="Add your own keyword"
                 className="input" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())} />
