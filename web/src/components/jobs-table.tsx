@@ -163,7 +163,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-sm">
+        <table className="w-full min-w-[780px] table-fixed text-sm">
           <colgroup>
             <col className="w-[7%]" /><col className="w-[31%]" /><col className="w-[15%]" /><col className="w-[8%]" />
             <col className="w-[15%]" /><col className="w-[8%]" /><col className="w-[12%]" />
