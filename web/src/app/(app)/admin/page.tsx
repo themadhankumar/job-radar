@@ -80,6 +80,35 @@ export default async function AdminPage() {
     FROM feedback ORDER BY created_at DESC LIMIT 8
   `);
 
+  const scoreCorr = await q<{ tier: string; ord: number; views: number; applies: number }>(sql`
+    WITH tagged AS (
+      SELECT e.name,
+        CASE WHEN s.score >= 42 THEN 'High (42+)'
+             WHEN s.score >= 30 THEN 'Mid (30-41)'
+             ELSE 'Low (<30)' END AS tier,
+        CASE WHEN s.score >= 42 THEN 3 WHEN s.score >= 30 THEN 2 ELSE 1 END AS ord
+      FROM events e
+      JOIN user_job_scores s ON s.user_id = e.user_id AND s.job_id = (e.props->>'jobId')::int
+      WHERE e.name IN ('job_view', 'job_apply_click') AND e.props->>'jobId' ~ '^[0-9]+$'
+    )
+    SELECT tier, ord,
+      count(*) FILTER (WHERE name = 'job_view')::int AS views,
+      count(*) FILTER (WHERE name = 'job_apply_click')::int AS applies
+    FROM tagged GROUP BY tier, ord ORDER BY ord DESC
+  `);
+
+  const funnel = await q<{ status: string; n: number }>(sql`
+    SELECT status, count(*)::int AS n FROM user_job_status GROUP BY status
+  `);
+  const fmap: Record<string, number> = {};
+  for (const f of funnel) fmap[f.status] = n(f.n);
+  const STAGE_ORDER = ["reviewing", "applied", "interviewing", "offer", "rejected", "skipped"];
+  const stages = STAGE_ORDER.filter((k) => (fmap[k] ?? 0) > 0).map((k) => ({ label: k, n: fmap[k] ?? 0 }));
+  const fmax = Math.max(1, ...stages.map((st) => st.n));
+  const appBase = (fmap.applied ?? 0) + (fmap.interviewing ?? 0) + (fmap.offer ?? 0) + (fmap.rejected ?? 0);
+  const ivRate = appBase ? Math.round((((fmap.interviewing ?? 0) + (fmap.offer ?? 0)) / appBase) * 100) : 0;
+  const offerRate = appBase ? Math.round(((fmap.offer ?? 0) / appBase) * 100) : 0;
+
   const W = 520, H = 60, gap = 3;
   const max = Math.max(1, ...signups.map((s) => n(s.n)));
   const bw = signups.length ? (W - gap * (signups.length - 1)) / signups.length : W;
@@ -109,6 +138,50 @@ export default async function AdminPage() {
           <p className="t-muted mt-3 text-sm">No signups in range.</p>
         )}
       </section>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <section className="surface rounded-xl p-5">
+          <div className="t-muted text-xs font-medium uppercase tracking-wide">Score &rarr; apply-click &middot; does match predict clicks?</div>
+          <div className="mt-4 space-y-3">
+            {scoreCorr.length ? scoreCorr.map((t) => {
+              const rate = t.views ? (t.applies / t.views) * 100 : 0;
+              return (
+                <div key={t.tier}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{t.tier}</span>
+                    <span className="t-muted text-xs tabular-nums">{n(t.applies)}/{n(t.views)} &middot; {rate.toFixed(0)}%</span>
+                  </div>
+                  <div className="mt-1.5 h-2 overflow-hidden rounded bg-[rgb(var(--surface-2))]">
+                    <div className="h-full rounded bg-[rgb(var(--accent))]" style={{ width: `${Math.min(100, rate)}%` }} />
+                  </div>
+                </div>
+              );
+            }) : <p className="t-muted text-sm">No scored views yet.</p>}
+          </div>
+          <p className="t-muted mt-4 text-xs">Apply-click rate by match tier. Higher tiers clicking more = the score ranks the right jobs.</p>
+        </section>
+
+        <section className="surface rounded-xl p-5">
+          <div className="t-muted text-xs font-medium uppercase tracking-wide">Application pipeline &middot; current status</div>
+          <div className="mt-4 space-y-2.5">
+            {stages.length ? stages.map((st) => (
+              <div key={st.label}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="capitalize">{st.label}</span>
+                  <span className="tabular-nums">{st.n}</span>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded bg-[rgb(var(--surface-2))]">
+                  <div className="h-full rounded bg-[rgb(var(--accent))]" style={{ width: `${(st.n / fmax) * 100}%` }} />
+                </div>
+              </div>
+            )) : <p className="t-muted text-sm">No applications tracked yet.</p>}
+          </div>
+          <div className="t-muted mt-4 flex gap-5 text-xs">
+            <span>Interview rate <span className="font-medium text-[rgb(var(--text))]">{ivRate}%</span></span>
+            <span>Offer rate <span className="font-medium text-[rgb(var(--text))]">{offerRate}%</span></span>
+          </div>
+        </section>
+      </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <section className="surface rounded-xl p-5">
