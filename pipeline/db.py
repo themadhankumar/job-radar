@@ -93,7 +93,7 @@ def users_for_notion(conn) -> list[dict]:
 
 def users_for_digest(conn) -> list[dict]:
     return conn.execute(
-        "SELECT id, name, email, us_only, digest_sources FROM users WHERE digest_enabled AND onboarded"
+        "SELECT id, name, email, region, digest_sources FROM users WHERE digest_enabled AND onboarded"
     ).fetchall()
 
 

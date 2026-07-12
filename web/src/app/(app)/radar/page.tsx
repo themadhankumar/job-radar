@@ -73,7 +73,9 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
     .where(eq(schema.userCompanies.userId, user.id));
 
   const conds: SQL[] = [];
-  if (user.usOnly) conds.push(sql`${schema.jobs.country} <> 'intl'`);
+  if (user.region === "us") conds.push(sql`${schema.jobs.country} <> 'intl'`);
+  else if (user.region === "intl") conds.push(sql`${schema.jobs.country} = 'intl'`);
+  // region === "all": no country filter
   if (tab === "tracked") {
     // Watchlist jobs (filtered by keywords) OR jobs this user added by URL —
     // manual adds are pinned here regardless of watchlist/keywords, otherwise

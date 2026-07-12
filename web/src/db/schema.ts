@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   onboarded: boolean("onboarded").default(false).notNull(),
   digestEnabled: boolean("digest_enabled").default(true).notNull(),
   usOnly: boolean("us_only").default(false).notNull(),
+  region: text("region", { enum: ["us", "intl", "all"] }).default("us").notNull(),
   suggestedThreshold: integer("suggested_threshold").default(35).notNull(),
   digestSources: text("digest_sources").array().default(["greenhouse","lever","ashby","workday","linkedin"]).notNull(),
   anthropicKeyEnc: text("anthropic_key_enc"),

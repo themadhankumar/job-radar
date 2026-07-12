@@ -75,8 +75,12 @@ def main() -> int:
     for user in dbm.users_for_digest(conn):
         since = dbm.last_digest_at(conn, user["id"]) or (dbm.utcnow() - timedelta(hours=24))
         jobs = dbm.user_matched_jobs_since(conn, user["id"], since, user.get("digest_sources"))
-        if user.get("us_only"):
+        region = user.get("region") or "us"
+        if region == "us":
             jobs = [j for j in jobs if j.get("country") != "intl"]
+        elif region == "intl":
+            jobs = [j for j in jobs if j.get("country") == "intl"]
+        # region == "all": no country filter
         if not jobs:
             console.print(f"[dim]{user['email']}: nothing new, no email[/dim]")
             continue

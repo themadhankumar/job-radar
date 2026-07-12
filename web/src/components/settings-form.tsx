@@ -44,10 +44,16 @@ const DIGEST_SOURCES = [
   { key: "linkedin", label: "LinkedIn" },
 ];
 
+const REGIONS = [
+  { key: "us", label: "United States" },
+  { key: "intl", label: "International" },
+  { key: "all", label: "Everywhere" },
+];
+
 export function SettingsForm(props: {
   digestEnabled: boolean;
   needsSponsorship: boolean;
-  usOnly: boolean;
+  region: string;
   suggestedThreshold: number;
   digestSources: string[];
   hasKey: boolean;
@@ -57,7 +63,7 @@ export function SettingsForm(props: {
 }) {
   const [digest, setDigest] = useState(props.digestEnabled);
   const [sponsor, setSponsor] = useState(props.needsSponsorship);
-  const [usOnly, setUsOnly] = useState(props.usOnly);
+  const [region, setRegion] = useState(props.region);
   const [threshold, setThreshold] = useState(props.suggestedThreshold);
   const [sources, setSources] = useState<string[]>(props.digestSources);
   const [apiKey, setApiKey] = useState("");
@@ -119,9 +125,22 @@ export function SettingsForm(props: {
           <Row label="I need visa sponsorship" hint="Shows employer sponsorship signals on job details.">
             <Switch checked={sponsor} onChange={(v) => { setSponsor(v); save({ needsSponsorship: v }, "Sponsorship preference"); }} />
           </Row>
-          <Row label="US roles only" hint='Hides clearly international postings everywhere — radar tabs, Suggested, and the email digest. Ambiguous locations (plain "Remote") stay visible.'>
-            <Switch checked={usOnly} onChange={(v) => { setUsOnly(v); save({ usOnly: v }, "US-only preference"); }} />
-          </Row>
+          <div className="border-b border-[rgb(var(--hairline)/0.10)] py-3">
+            <p className="text-sm">Region</p>
+            <p className="t-muted mb-2 text-xs">Which countries appear across radar tabs, Suggested, and the digest. &ldquo;United States&rdquo; hides clearly international postings; ambiguous locations (plain &ldquo;Remote&rdquo;) always stay visible.</p>
+            <div className="flex flex-wrap gap-1.5">
+              {REGIONS.map((r) => {
+                const on = region === r.key;
+                return (
+                  <button key={r.key} type="button"
+                    className={`chip transition-colors duration-150 ${on ? "border-[rgb(var(--accent))] t-accent" : "t-muted hover:border-[rgb(var(--accent))]"}`}
+                    onClick={() => { setRegion(r.key); save({ region: r.key }, "Region"); }}>
+                    {on ? "✓ " : ""}{r.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="py-3">
             <div className="flex items-center justify-between">
               <div>

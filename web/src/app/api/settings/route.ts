@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const set: Record<string, unknown> = {};
   if (typeof body.digestEnabled === "boolean") set.digestEnabled = body.digestEnabled;
   if (typeof body.needsSponsorship === "boolean") set.needsSponsorship = body.needsSponsorship;
-  if (typeof body.usOnly === "boolean") set.usOnly = body.usOnly;
+  if (typeof body.region === "string" && ["us", "intl", "all"].includes(body.region)) set.region = body.region;
   if (typeof body.suggestedThreshold === "number" && Number.isFinite(body.suggestedThreshold)) {
     set.suggestedThreshold = Math.min(Math.max(Math.round(body.suggestedThreshold), 0), 100);
   }
