@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, ExternalLink, Handshake, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
+import { track } from "@/lib/track";
 import { htmlToText } from "@/lib/text";
 import { getScoreTier, SCORE_TIER_HI, SCORE_TIER_MID } from "@/lib/score-tier";
 import type { MatchComponents } from "@/db/schema";
@@ -136,6 +137,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
   const [hidden, setHidden] = useState<Set<number>>(new Set());
 
   async function dismiss(jobId: number) {
+    track("job_dismiss", { jobId });
     setHidden((h) => new Set(h).add(jobId));
     await fetch("/api/jobs/dismiss", {
       method: "POST",
@@ -195,7 +197,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
               const hasReferral = referrals.length > 0;
               const warmest = referrals.some((r) => r.warmth === "warm") ? "warm" : referrals.some((r) => r.warmth === "cold") ? "cold" : null;
               return (
-                <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); }}
+                <tr key={j.id} onClick={() => { setOpenId(j.id); setTab("details"); track("job_view", { jobId: j.id, score: j.score, tab: radarTab }); }}
                   className={`group cursor-pointer border-b border-[rgb(var(--hairline)/0.10)] transition-colors duration-150 last:border-0 hover:bg-[rgb(var(--surface))] ${hasReferral ? "bg-[rgb(var(--ok)/0.05)] shadow-[inset_2px_0_0_rgb(var(--ok))]" : ""}`}>
                   <td className="px-4 py-4 transition-shadow duration-150 group-hover:shadow-[inset_2px_0_0_rgb(var(--accent))]"><ScoreBadge score={j.score} /></td>
                   <td className="px-4 py-4 font-medium">
@@ -252,7 +254,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
             </div>
             <div className="mb-4 flex gap-1 border-b border-[rgb(var(--border))]">
               {(["details", "studio"] as const).map((t) => (
-                <button key={t} onClick={() => setTab(t)}
+                <button key={t} onClick={() => { setTab(t); if (t === "studio") track("studio_open", { jobId: open.id }); }}
                   className={`px-3 py-1.5 text-sm capitalize transition-colors duration-150 ${tab === t
                     ? "border-b-2 border-[rgb(var(--accent))] font-medium"
                     : "t-muted hover:text-inherit"}`}>
@@ -292,7 +294,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                 <p className="t-muted">No USCIS record found under this exact name — could mean no sponsorship history, a different legal entity name, or the data isn&apos;t imported yet.</p>
               )}
             </div>
-            <a href={open.url} target="_blank" rel="noreferrer" className="btn-primary mb-6 w-full">
+            <a href={open.url} target="_blank" rel="noreferrer" onClick={() => track("job_apply_click", { jobId: open.id })} className="btn-primary mb-6 w-full">
               Open posting <ExternalLink size={14} />
             </a>
             <div className="surface rounded-lg p-4">

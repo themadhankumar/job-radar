@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Radar, Building2, Target, FileText, UserRound, Settings, Handshake } from "lucide-react";
+import { Radar, Building2, Target, FileText, UserRound, Settings, Handshake, BarChart3 } from "lucide-react";
 
 const NAV = [
   { href: "/radar", label: "Radar", icon: Radar },
@@ -13,11 +13,11 @@ const NAV = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function SidebarNav() {
+export function SidebarNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-1 flex-col gap-1.5">
-      {NAV.map(({ href, label, icon: Icon }) => {
+      {[...NAV, ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: BarChart3 }] : [])].map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(href + "/");
         return (
           <Link

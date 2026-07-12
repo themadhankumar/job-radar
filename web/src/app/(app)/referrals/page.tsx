@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Handshake, Info, Pencil, Trash2, X } from "lucide-react";
+import { track } from "@/lib/track";
 
 type Contact = {
   id: number;
@@ -58,6 +59,7 @@ export default function ReferralsPage() {
     }
     setBusy(true);
     setErr("");
+    const wasNew = !form.id;
     const match = companies.find((c) => c.name.toLowerCase() === form.companyName.trim().toLowerCase());
     const body = { ...form, companyId: match?.id ?? null };
     const res = await fetch("/api/referrals", {
@@ -68,6 +70,7 @@ export default function ReferralsPage() {
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) { setErr(data.error ?? "Could not save — try again."); return; }
+    if (wasNew) track("referral_add", { companyId: match?.id ?? null });
     setOpen(false);
     load();
   }

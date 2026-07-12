@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Link2 } from "lucide-react";
+import { track } from "@/lib/track";
 
 type Phase = "url" | "paste" | "busy";
 
@@ -43,6 +44,7 @@ export function AddByUrl() {
         setPhase("paste");
         return;
       }
+      track("add_url", {});
       reset();
       router.refresh();
     } catch {
