@@ -93,11 +93,11 @@ def users_for_notion(conn) -> list[dict]:
 
 def users_for_digest(conn) -> list[dict]:
     return conn.execute(
-        "SELECT id, name, email, us_only FROM users WHERE digest_enabled AND onboarded"
+        "SELECT id, name, email, us_only, digest_sources FROM users WHERE digest_enabled AND onboarded"
     ).fetchall()
 
 
-def user_matched_jobs_since(conn, user_id: int, since: datetime) -> list[dict]:
+def user_matched_jobs_since(conn, user_id: int, since: datetime, sources: list[str] | None = None) -> list[dict]:
     """Jobs created since `since` that match the user's keywords and companies.
 
     Tracked-company ATS jobs match on title OR description; global/LinkedIn
@@ -116,6 +116,7 @@ def user_matched_jobs_since(conn, user_id: int, since: datetime) -> list[dict]:
                        WHERE s.user_id = %(uid)s AND s.job_id = j.id) AS score
         FROM jobs j
         WHERE j.created_at > %(since)s
+          AND (%(sources)s IS NULL OR j.source = ANY(%(sources)s))
           AND (
             (
               (j.company_id IN (SELECT id FROM mine) OR lower(j.company_name) IN (SELECT lname FROM mine))
@@ -133,7 +134,7 @@ def user_matched_jobs_since(conn, user_id: int, since: datetime) -> list[dict]:
                  j.posted_at DESC NULLS LAST
         LIMIT 100
         """,
-        {"uid": user_id, "since": since},
+        {"uid": user_id, "since": since, "sources": sources},
     ).fetchall()
 
 
