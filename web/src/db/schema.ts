@@ -1,5 +1,6 @@
 import {
   bigint,
+  bigserial,
   boolean,
   jsonb,
   real,
@@ -250,4 +251,12 @@ export const authAttempts = pgTable("auth_attempts", {
   key: text("key").primaryKey(),
   count: integer("count").notNull().default(1),
   windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const events = pgTable("events", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  props: jsonb("props").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
