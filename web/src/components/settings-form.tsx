@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { estCostUSD, formatUSD } from "@/lib/pricing";
 
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -85,6 +86,7 @@ export function SettingsForm(props: {
   const CAP_OUT = 20_000;
   const pctIn = Math.min(100, Math.round((props.usage.tokensIn / CAP_IN) * 100));
   const pctOut = Math.min(100, Math.round((props.usage.tokensOut / CAP_OUT) * 100));
+  const allowancePct = Math.max(pctIn, pctOut);
 
   return (
     <div className="space-y-6">
@@ -187,27 +189,23 @@ export function SettingsForm(props: {
 
       <section className="surface rounded-xl p-5">
         <h2 className="mb-3 text-sm font-semibold">Studio usage this month</h2>
-        <div className="space-y-3">
-          <div>
-            <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="t-muted">Input</span>
-              <span className="font-data t-muted">{props.usage.tokensIn.toLocaleString()}{!props.hasKey && ` / ${CAP_IN.toLocaleString()}`}</span>
+        {props.hasKey ? (
+          <div className="space-y-1">
+            <p className="font-data text-2xl">≈ {formatUSD(estCostUSD(props.usage.tokensIn, props.usage.tokensOut))}</p>
+            <p className="t-muted text-xs">{props.usage.tokensIn.toLocaleString()} in · {props.usage.tokensOut.toLocaleString()} out · estimated at Opus 4.8 rates ($5/$25 per M). Exact billing shows in your Anthropic Console.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm">Free monthly allowance</span>
+              <span className="font-data t-muted text-xs">{allowancePct}% used</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
-              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: props.hasKey ? "100%" : `${pctIn}%` }} />
+              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: `${allowancePct}%` }} />
             </div>
+            <p className="t-muted text-xs">Resets on the 1st. Add your own Anthropic API key above to remove the limit and see your exact spend.</p>
           </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="t-muted">Output</span>
-              <span className="font-data t-muted">{props.usage.tokensOut.toLocaleString()}{!props.hasKey && ` / ${CAP_OUT.toLocaleString()}`}</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
-              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: props.hasKey ? "100%" : `${pctOut}%` }} />
-            </div>
-          </div>
-          {props.hasKey && <p className="t-muted text-xs">Using your own key — uncapped, tracked for reference only.</p>}
-        </div>
+        )}
       </section>
 
       {saved && <p className="t-accent text-sm transition-opacity duration-200 ease-[var(--ease)]">{saved}</p>}
