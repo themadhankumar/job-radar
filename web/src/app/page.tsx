@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { sql } from "drizzle-orm";
@@ -10,6 +11,18 @@ import {
 } from "@/components/landing-fragments";
 import { getSessionUser } from "@/lib/auth";
 import { FeedbackWidget } from "@/components/feedback-widget";
+
+export const metadata: Metadata = {
+  title: "Job Radar | Score Every Job Against Your Resume, With Visa Sponsorship Signals",
+  description:
+    "Job Radar is a free job search tool that scores every posting against your resume, shows real H1B visa sponsorship history, and tracks your referral contacts. Apply where you're most qualified, not everywhere.",
+  openGraph: {
+    title: "Job Radar | Score Every Job Against Your Resume",
+    description:
+      "A free job search tool that scores every posting against your resume, surfaces real visa sponsorship history, and tracks your referral contacts.",
+    type: "website",
+  },
+};
 
 export const revalidate = 3600;
 
@@ -51,12 +64,13 @@ export default async function Landing() {
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-6 pt-16">
         <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
-          Every posting, scored against your resume.
+          Apply where you&apos;re most qualified. Not everywhere.
         </h1>
         <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
           <p className="t-muted max-w-md text-base leading-relaxed">
-            Job Radar sweeps the boards every two hours and compresses each posting
-            into one honest match % — with the five signals behind it.
+            Job Radar is a job search tool that scores every posting against your resume
+            and gives you one honest match percentage. It ranks the roles you&apos;re actually
+            qualified for and pins the jobs where you already know someone to the top.
           </p>
           <Link href="/signup" className="btn-primary h-10 px-5 text-sm">Start scanning</Link>
         </div>
@@ -74,9 +88,9 @@ export default async function Landing() {
           <Label n="01">Sweep</Label>
           <h2 className="text-2xl font-semibold tracking-tight">Runs while you sleep.<br />And while you don&apos;t.</h2>
           <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
-            A pipeline pulls Greenhouse, Lever, Ashby, Workday, and LinkedIn into one
-            corpus, extracts pay and experience, tags geography, and rescores everything
-            against your profile — every two hours, around the clock.
+            A pipeline pulls Greenhouse, Lever, Ashby, Workday, and LinkedIn into one place
+            every two hours. It reads pay and experience, tags location, and rescores every
+            posting against your profile, so your radar is current the moment you open it.
           </p>
         </div>
         <LandingSweepLog />
@@ -89,8 +103,9 @@ export default async function Landing() {
           <Label n="02">Score</Label>
           <h2 className="text-2xl font-semibold tracking-tight">One number.<br />Five reasons. Zero mystery.</h2>
           <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
-            Every match % opens into its five weighted components with the exact terms your
-            resume is missing. A low score is a to-do list, not a verdict.
+            Every resume match score opens into five weighted signals covering skills, role,
+            work fit, experience, and industry, plus the exact keywords your resume is missing.
+            You spend your time on the jobs you&apos;d actually get instead of guessing.
           </p>
         </div>
       </section>
@@ -101,9 +116,9 @@ export default async function Landing() {
           <Label n="03">Tailor</Label>
           <h2 className="text-2xl font-semibold tracking-tight">Your resume, rewritten per job. With receipts.</h2>
           <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
-            Every job opens into a chat that knows the posting and your resume. Gap analysis,
-            screener answers — sponsorship phrasing included — and a tailored .tex or .docx
-            export with a line-by-line diff of every change.
+            Every posting opens into a chat that already knows the job and your resume. You get
+            gap analysis, screener answers with sponsorship phrasing built in, and a tailored
+            resume export with a clear diff of every change before you send anything.
           </p>
         </div>
         <StudioFragment />
@@ -116,9 +131,10 @@ export default async function Landing() {
           <Label n="04">Sponsor signals</Label>
           <h2 className="text-2xl font-semibold tracking-tight">Know who sponsors<br />before you apply.</h2>
           <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
-            Every job carries real USCIS H-1B petition history — whether the employer
-            sponsors, how many approvals, how recently. If you need a visa, this is the
-            filter that saves you a hundred dead-end applications. No other job tool has it.
+            Every job carries real USCIS petition history, so you can see whether the employer
+            sponsors visas, how many approvals they filed, and how recently. If you need visa
+            sponsorship, this is the filter that saves you a hundred dead end applications.
+            No other job search tool surfaces it.
           </p>
         </div>
       </section>
@@ -127,11 +143,12 @@ export default async function Landing() {
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-6 pt-32 sm:grid-cols-[0.9fr_1.1fr]">
         <div>
           <Label n="05">Referrals</Label>
-          <h2 className="text-2xl font-semibold tracking-tight">A warm intro beats<br />a cold application.</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Skip the line<br />where you know someone.</h2>
           <p className="t-muted mt-4 max-w-sm text-sm leading-relaxed">
-            Log the people who can refer you — a friend, a former colleague, family. When a
-            posting from their company hits your radar, it&apos;s pinned to the top and marked,
-            so you never miss the one job you actually have a way into.
+            Track the people who can refer you, whether it&apos;s a friend, a former colleague,
+            or family. The moment a role opens at their company, it jumps to the top of your radar,
+            marked and ready. A warm referral beats a cold application every time, and this is the
+            one opening you can&apos;t afford to miss.
           </p>
         </div>
         <ReferralFragment />
@@ -142,14 +159,14 @@ export default async function Landing() {
         <div className="grid gap-10 sm:grid-cols-2">
           <div>
             <Label n="06">Add by URL</Label>
-            <h3 className="text-lg font-semibold tracking-tight">A recruiter DM&apos;d you a link?</h3>
-            <p className="t-muted mt-3 text-sm leading-relaxed">Paste it. Parsed, scored, and studio-ready — even from boards that block scrapers.</p>
+            <h3 className="text-lg font-semibold tracking-tight">A recruiter sent you a link?</h3>
+            <p className="t-muted mt-3 text-sm leading-relaxed">Paste it. Job Radar parses it, scores it against your resume, and gets it studio ready, even for boards that block scrapers.</p>
             <div className="mt-5"><AddUrlFragment /></div>
           </div>
           <div>
             <Label n="07">Daily digest</Label>
             <h3 className="text-lg font-semibold tracking-tight">One email at 6 PM. Not fifty tabs.</h3>
-            <p className="t-muted mt-3 text-sm leading-relaxed">The day&apos;s new matches, ranked, in your inbox. Stop refreshing job boards.</p>
+            <p className="t-muted mt-3 text-sm leading-relaxed">Your best new matches, ranked, delivered once a day. Stop refreshing job boards.</p>
             <div className="mt-5"><DigestFragment /></div>
           </div>
         </div>
@@ -158,8 +175,8 @@ export default async function Landing() {
       {/* Closing CTA band */}
       <section className="mx-auto mt-32 max-w-5xl px-6">
         <div className="surface overflow-hidden rounded-2xl px-8 py-16 text-center">
-          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Put your search on radar.</h2>
-          <p className="t-muted mx-auto mt-3 max-w-md text-sm">Free to use. Bring your own resume. See your first scores in minutes.</p>
+          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Apply smarter. Not more.</h2>
+          <p className="t-muted mx-auto mt-3 max-w-md text-sm">Job Radar is free to use. Bring your own resume and see your first match scores and your shortlist in minutes.</p>
           <Link href="/signup" className="btn-primary mt-6 inline-flex h-11 items-center px-6 text-sm">Get started</Link>
         </div>
       </section>
