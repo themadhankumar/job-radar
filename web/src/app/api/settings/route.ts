@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getSessionUserId } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
+import { validateKey } from "@/lib/studio";
 
 export async function POST(req: Request) {
   const uid = await getSessionUserId();
@@ -16,7 +17,15 @@ export async function POST(req: Request) {
     set.suggestedThreshold = Math.min(Math.max(Math.round(body.suggestedThreshold), 0), 100);
   }
   if (typeof body.anthropicKey === "string") {
-    set.anthropicKeyEnc = body.anthropicKey.trim() ? encrypt(body.anthropicKey.trim()) : null;
+    const trimmed = body.anthropicKey.trim();
+    if (trimmed) {
+      if (!(await validateKey(trimmed))) {
+        return NextResponse.json({ error: "That key didn't work — double-check it and try again." }, { status: 400 });
+      }
+      set.anthropicKeyEnc = encrypt(trimmed);
+    } else {
+      set.anthropicKeyEnc = null; // explicit clear -> back to the free Haiku tier
+    }
   }
   if (typeof body.notionToken === "string") {
     set.notionTokenEnc = body.notionToken.trim() ? encrypt(body.notionToken.trim()) : null;

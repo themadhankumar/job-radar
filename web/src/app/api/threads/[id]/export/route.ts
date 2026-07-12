@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getSessionUser } from "@/lib/auth";
-import { callAnthropic, checkCap, recordUsage, resolveKey, studioSystemPrompt } from "@/lib/studio";
+import { callAnthropic, checkCap, recordUsage, resolveKey, studioModel, studioSystemPrompt } from "@/lib/studio";
 import {
   buildCleanDocx,
   docxParagraphs,
@@ -61,6 +61,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       const original = Buffer.from(resume.fileB64, "base64").toString("utf8");
       const result = await callAnthropic({
         apiKey: key,
+        model: studioModel(byok),
         system,
         maxTokens: 8000,
         messages: [{
@@ -94,6 +95,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       const numbered = paras.map((p) => `[${p.index}] ${p.text}`).join("\n").slice(0, 30000);
       const result = await callAnthropic({
         apiKey: key,
+        model: studioModel(byok),
         system,
         maxTokens: 6000,
         messages: [{
@@ -128,6 +130,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     /* --------------------------------------- .pdf / .txt → clean rebuild */
     const result = await callAnthropic({
       apiKey: key,
+      model: studioModel(byok),
       system,
       maxTokens: 6000,
       messages: [{

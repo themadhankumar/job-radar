@@ -118,9 +118,9 @@ export function ProductTour({ onDone, doneLabel = "Open my radar" }: { onDone: (
       ) : (
         <section>
           <p className="font-data t-muted mb-2 text-xs">06 · Optional</p>
-          <h1 className="text-2xl font-semibold tracking-tight">One more thing — totally optional.</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Two speeds for Studio.</h1>
           <p className="t-muted mt-3 max-w-lg text-sm leading-relaxed">
-            Resume Studio runs out of the box on a shared key, capped at 100k input / 20k output tokens a month across everyone. Add your own Anthropic API key — now or later in Settings — to remove that cap. Nothing is locked without one; this just raises the ceiling.
+            Out of the box, Resume Studio runs on Claude Haiku 4.5 — fast, capable, and free. Add your own Anthropic API key and every tailoring session steps up to Claude Opus 4.8, Anthropic&rsquo;s most capable model, billed to your account. Now or later in Settings — nothing&rsquo;s locked either way.
           </p>
           <div className="surface mt-6 rounded-xl p-5">
             {saved ? (

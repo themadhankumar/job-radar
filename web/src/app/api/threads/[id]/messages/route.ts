@@ -9,6 +9,7 @@ import {
   resolveKey,
   screenerPackPrompt,
   streamAnthropic,
+  studioModel,
   studioSystemPrompt,
   type ChatMsg,
 } from "@/lib/studio";
@@ -77,6 +78,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       try {
         const result = await streamAnthropic({
           apiKey: key,
+          model: studioModel(byok),
           system,
           messages,
           maxTokens: 2000,

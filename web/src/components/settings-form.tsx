@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { estCostUSD, formatUSD } from "@/lib/pricing";
 
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -58,6 +59,8 @@ export function SettingsForm(props: {
   suggestedThreshold: number;
   digestSources: string[];
   hasKey: boolean;
+  byok: boolean;
+  keyHint: string | null;
   hasNotion: boolean;
   notionDatabaseId: string;
   usage: { tokensIn: number; tokensOut: number };
@@ -71,6 +74,9 @@ export function SettingsForm(props: {
   const [notionToken, setNotionToken] = useState("");
   const [notionDb, setNotionDb] = useState(props.notionDatabaseId);
   const [saved, setSaved] = useState("");
+  const [editingKey, setEditingKey] = useState(false);
+  const [keyStatus, setKeyStatus] = useState("");
+  const router = useRouter();
 
   async function save(body: Record<string, unknown>, label: string) {
     const res = await fetch("/api/settings", {
@@ -80,6 +86,42 @@ export function SettingsForm(props: {
     });
     setSaved(res.ok ? `${label} saved` : "Could not save — try again");
     setTimeout(() => setSaved(""), 2500);
+  }
+
+  async function saveKey() {
+    const trimmed = apiKey.trim();
+    if (!trimmed) return;
+    setKeyStatus("saving");
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ anthropicKey: trimmed }),
+    });
+    if (res.ok) {
+      setApiKey("");
+      setEditingKey(false);
+      setKeyStatus("✓ Key verified — you're on Opus 4.8.");
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setKeyStatus(data.error ?? "Couldn't save — try again.");
+    }
+  }
+
+  async function removeKey() {
+    if (!window.confirm("Remove your key and switch back to the free Haiku tier?")) return;
+    setKeyStatus("saving");
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ anthropicKey: "" }),
+    });
+    if (res.ok) {
+      setKeyStatus("");
+      router.refresh();
+    } else {
+      setKeyStatus("Couldn't remove — try again.");
+    }
   }
 
   const CAP_IN = 100_000;
@@ -161,12 +203,68 @@ export function SettingsForm(props: {
       </section>
 
       <section className="surface rounded-xl p-5">
-        <h2 className="mb-1 text-sm font-semibold">Anthropic API key {props.hasKey && <span className="chip t-accent ml-2">configured</span>}</h2>
-        <p className="t-muted mb-3 text-xs">Powers your resume tailoring chats. Stored encrypted. Leave empty to use the shared key with usage caps.</p>
-        <div className="flex gap-2">
-          <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-ant-…" className="input" />
-          <button className="btn-ghost" onClick={() => { save({ anthropicKey: apiKey }, "API key"); setApiKey(""); }}>Save</button>
+        <h2 className="mb-3 text-sm font-semibold">Resume Studio</h2>
+
+        <div className={`mb-3 flex items-center gap-2 rounded-lg border px-3 py-2 ${props.byok ? "border-[rgb(var(--accent)/0.4)] bg-[rgb(var(--accent)/0.06)]" : "border-[rgb(var(--hairline)/0.14)]"}`}>
+          <span className={`h-2 w-2 shrink-0 rounded-full ${props.byok ? "bg-[rgb(var(--accent))]" : "bg-[rgb(var(--hairline)/0.5)]"}`} />
+          <p className="text-sm">
+            {props.byok
+              ? <>You&rsquo;re on <span className="t-accent font-semibold">Claude Opus 4.8</span> — your key</>
+              : <>Running on <span className="font-semibold">Claude Haiku 4.5</span> — free tier</>}
+          </p>
         </div>
+
+        {props.hasKey && !props.byok && (
+          <p className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            A key is saved but couldn&rsquo;t be read, so you&rsquo;re on the free tier for now. Re-enter it below to switch back to Opus 4.8.
+          </p>
+        )}
+
+        {props.byok ? (
+          <div className="mb-4 space-y-1">
+            <p className="font-data text-2xl">≈ {formatUSD(estCostUSD(props.usage.tokensIn, props.usage.tokensOut))} <span className="t-muted text-xs">this month · on Opus 4.8</span></p>
+            <p className="t-muted text-xs">{props.usage.tokensIn.toLocaleString()} in · {props.usage.tokensOut.toLocaleString()} out · estimated at Opus 4.8 rates ($5/$25 per M). Exact billing shows in your Anthropic Console.</p>
+          </div>
+        ) : (
+          <div className="mb-4 space-y-2">
+            <div className="flex items-baseline justify-between text-xs">
+              <span className="t-muted">Free monthly allowance</span>
+              <span className="font-data t-muted">{allowancePct}% used</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
+              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: `${allowancePct}%` }} />
+            </div>
+            <p className="t-muted text-xs">Resets on the 1st. Add your Anthropic API key to upgrade to Opus 4.8 — billed to your account.</p>
+          </div>
+        )}
+
+        {props.hasKey && props.byok && !editingKey ? (
+          <div className="flex items-center justify-between rounded-lg border border-[rgb(var(--hairline)/0.14)] px-3 py-2">
+            <span className="font-data t-muted text-sm">sk-ant-…{props.keyHint ?? "••••"}</span>
+            <div className="flex gap-2">
+              <button className="btn-ghost text-xs" onClick={() => setEditingKey(true)}>Replace</button>
+              <button className="btn-ghost text-xs text-red-400" onClick={removeKey}>Remove</button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="t-muted text-xs">
+              {props.hasKey
+                ? "Paste a new key to replace the current one."
+                : "Studio runs on Claude Haiku 4.5 by default. Add your Anthropic key to run every session on Claude Opus 4.8 — the frontier model — billed to your account. Stored encrypted; change it anytime."}
+            </p>
+            <div className="flex gap-2">
+              <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-ant-…" className="input" />
+              <button className="btn-ghost" disabled={keyStatus === "saving"} onClick={saveKey}>{keyStatus === "saving" ? "Verifying…" : "Save"}</button>
+              {props.hasKey && editingKey && (
+                <button className="btn-ghost text-xs" onClick={() => { setEditingKey(false); setApiKey(""); setKeyStatus(""); }}>Cancel</button>
+              )}
+            </div>
+            {keyStatus && keyStatus !== "saving" && (
+              <p className={`text-xs ${keyStatus.startsWith("✓") ? "t-accent" : "text-red-400"}`}>{keyStatus}</p>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="surface rounded-xl p-5">
@@ -185,27 +283,6 @@ export function SettingsForm(props: {
         <h2 className="mb-1 text-sm font-semibold">Account</h2>
         <p className="t-muted mb-3 text-xs">Change your password. You stay signed in on this device.</p>
         <ChangePassword />
-      </section>
-
-      <section className="surface rounded-xl p-5">
-        <h2 className="mb-3 text-sm font-semibold">Studio usage this month</h2>
-        {props.hasKey ? (
-          <div className="space-y-1">
-            <p className="font-data text-2xl">≈ {formatUSD(estCostUSD(props.usage.tokensIn, props.usage.tokensOut))}</p>
-            <p className="t-muted text-xs">{props.usage.tokensIn.toLocaleString()} in · {props.usage.tokensOut.toLocaleString()} out · estimated at Opus 4.8 rates ($5/$25 per M). Exact billing shows in your Anthropic Console.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm">Free monthly allowance</span>
-              <span className="font-data t-muted text-xs">{allowancePct}% used</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[rgb(var(--hairline)/0.12)]">
-              <div className="h-full rounded-full bg-[rgb(var(--accent))]" style={{ width: `${allowancePct}%` }} />
-            </div>
-            <p className="t-muted text-xs">Resets on the 1st. Add your own Anthropic API key above to remove the limit and see your exact spend.</p>
-          </div>
-        )}
       </section>
 
       {saved && <p className="t-accent text-sm transition-opacity duration-200 ease-[var(--ease)]">{saved}</p>}
