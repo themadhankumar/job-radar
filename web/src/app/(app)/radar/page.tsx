@@ -9,7 +9,7 @@ import { AddByUrl } from "@/components/add-by-url";
 
 export const dynamic = "force-dynamic";
 
-type Search = { tab?: string; q?: string; days?: string; status?: string; sort?: string; dir?: string };
+type Search = { tab?: string; q?: string; days?: string; status?: string; sort?: string; dir?: string; ghost?: string };
 
 const SORT_KEYS = ["match", "posted", "created", "pay", "company", "location"] as const;
 type SortKey = (typeof SORT_KEYS)[number];
@@ -28,6 +28,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       ? 14
       : Math.min(Math.max(parseInt(searchParams.days) || 0, 0), 90);
   const statusFilter = searchParams.status ?? "";
+  const hideGhosts = searchParams.ghost === "1";
   const sort: SortKey = (SORT_KEYS as readonly string[]).includes(searchParams.sort ?? "") ? (searchParams.sort as SortKey) : "match";
   const dir: "asc" | "desc" = searchParams.dir === "asc" || searchParams.dir === "desc" ? searchParams.dir : DEFAULT_DIR[sort];
   const d = sql.raw(dir === "asc" ? "ASC" : "DESC");
@@ -136,6 +137,10 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   if (days > 0) {
     conds.push(gte(schema.jobs.postedAt, sql`now() - make_interval(days => ${days})`));
   }
+  if (hideGhosts) {
+    // Soft filter, opt-in: drop only postings that score as likely ghosts (>= 60).
+    conds.push(sql`(${schema.jobs.intentScore} IS NULL OR ${schema.jobs.intentScore} < 60)`);
+  }
 
   const rows = await db
     .select({
@@ -151,6 +156,8 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
       status: sql<string | null>`ujs.status`,
       score: sql<number | null>`sc.score`,
       components: sql<import("@/db/schema").MatchComponents | null>`sc.components`,
+      intentScore: schema.jobs.intentScore,
+      intent: sql<import("@/db/schema").IntentSignal | null>`${schema.jobs.intent}`,
       payMin: schema.jobs.payMin,
       payMax: schema.jobs.payMax,
       payPeriod: schema.jobs.payPeriod,
@@ -217,7 +224,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   jobs = grouped;
 
   return (
-    <Shell tab={tab} q={q} days={days} status={statusFilter}>
+    <Shell tab={tab} q={q} days={days} status={statusFilter} ghost={hideGhosts}>
       {jobs.length === 0 ? (
         tab === "tracked" ? (
           myCompanies.length === 0 ? (
@@ -244,7 +251,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
   );
 }
 
-function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string }) {
+function Shell({ children, ...filters }: { children: React.ReactNode; tab: string; q: string; days: number; status: string; ghost: boolean }) {
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-1.5 flex items-center justify-between gap-2">

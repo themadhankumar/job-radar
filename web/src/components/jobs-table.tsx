@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowUp, ExternalLink, Handshake, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, ExternalLink, Handshake, X } from "lucide-react";
 import { NewDot } from "./logo";
 import { Studio } from "./studio";
 import { track } from "@/lib/track";
 import { htmlToText } from "@/lib/text";
 import { getScoreTier, SCORE_TIER_HI, SCORE_TIER_MID } from "@/lib/score-tier";
-import type { MatchComponents } from "@/db/schema";
+import type { MatchComponents, IntentSignal } from "@/db/schema";
 
 export type JobRow = {
   id: number;
@@ -28,6 +28,8 @@ export type JobRow = {
   sponsorApprovals: number | null;
   otherLocations?: string[];
   components: MatchComponents | null;
+  intentScore: number | null;
+  intent: IntentSignal | null;
   referralContacts?: { name: string; relationship: string; warmth: string | null; status: string }[];
 };
 
@@ -93,6 +95,26 @@ function MatchBreakdown({ c }: { c: MatchComponents }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ghostLabel(level: string): string {
+  return level === "ghost" ? "Likely ghost job" : "Possible low hiring intent";
+}
+
+function IntentNote({ intent }: { intent: IntentSignal }) {
+  if (intent.level === "ok") return null;
+  const strong = intent.level === "ghost";
+  return (
+    <div className={`mb-4 rounded-lg border p-3 text-sm ${strong ? "border-[rgb(var(--danger)/0.35)]" : "border-[rgb(var(--border))]"}`}>
+      <p className={`mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide ${strong ? "text-[rgb(var(--danger))]" : "t-muted"}`}>
+        <AlertTriangle size={13} /> {ghostLabel(intent.level)}
+      </p>
+      <p className="t-muted">
+        Signs of low hiring intent{intent.reasons.length ? `: ${intent.reasons.join("; ")}` : ""}. May be an evergreen or
+        pipeline-building req kept open to collect resumes — worth a closer look before investing time.
+      </p>
     </div>
   );
 }
@@ -204,6 +226,12 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                     <span className="flex items-center">
                       {isFresh(j.createdAt) && st === "new" && <NewDot />}
                       <span className="truncate">{j.title}</span>
+                      {j.intent && j.intent.level !== "ok" && (
+                        <span title={ghostLabel(j.intent.level)}
+                          className={`ml-1.5 inline-flex shrink-0 items-center ${j.intent.level === "ghost" ? "text-[rgb(var(--danger))]" : "t-muted"}`}>
+                          <AlertTriangle size={12} />
+                        </span>
+                      )}
                       {hasReferral && (
                         <span title={`Referral: ${referrals.map((r) => r.name).join(", ")}`}
                           className={`ml-1.5 inline-flex shrink-0 items-center ${warmest === "warm" ? "t-ok" : "t-muted"}`}>
@@ -286,6 +314,7 @@ export function JobsTable({ jobs, tab: radarTab = "tracked", sort = "match", dir
                 </div>
               </div>
             )}
+            {open.intent && <IntentNote intent={open.intent} />}
             <div className="surface mb-4 rounded-lg p-3 text-sm">
               <p className="t-muted mb-1 text-xs font-medium uppercase tracking-wide">H-1B sponsorship signal</p>
               {open.sponsorApprovals != null && open.sponsorApprovals > 0 ? (

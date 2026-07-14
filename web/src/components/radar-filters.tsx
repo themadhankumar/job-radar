@@ -7,7 +7,7 @@ type Preset = { id: number; name: string; params: Record<string, string> };
 
 const LAST_KEY = "radar:lastFilters";
 
-export function RadarFilters({ tab, q, days, status }: { tab: string; q: string; days: number; status: string }) {
+export function RadarFilters({ tab, q, days, status, ghost }: { tab: string; q: string; days: number; status: string; ghost: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const [search, setSearch] = useState(q);
@@ -128,6 +128,11 @@ export function RadarFilters({ tab, q, days, status }: { tab: string; q: string;
             <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
           ))}
         </select>
+        <button onClick={() => setParam("ghost", ghost ? "" : "1")}
+          title="Hide postings that read as ghost jobs — evergreen / pipeline-building / low hiring intent"
+          className={`btn-ghost text-xs ${ghost ? "t-accent border-[rgb(var(--accent))]" : ""}`}>
+          {ghost ? "✓ " : ""}Hide likely ghosts
+        </button>
         <button onClick={savePreset} disabled={saving} title="Save current filters as a preset" className="btn-ghost text-xs">
           <BookmarkPlus size={13} /> Save preset
         </button>

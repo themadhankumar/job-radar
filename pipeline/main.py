@@ -109,10 +109,13 @@ def main() -> int:
     from extract import enrich_new_jobs
     from geo import tag_countries
     from match import compute_matches
+    from intent import score_intent
     enriched = enrich_new_jobs(conn)
     tagged = tag_countries(conn)
     scored = compute_matches(conn)
+    flagged = score_intent(conn)
     console.print(f"[dim]enriched {enriched} jobs, tagged {tagged} job locations, refreshed {scored} profile-match scores[/dim]")
+    console.print(f"[dim]scored hiring-intent for {flagged} new jobs[/dim]")
 
     # ---- Per-user Notion push ----
     if not args.no_notion and total_new > 0:

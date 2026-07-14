@@ -90,6 +90,9 @@ export const jobs = pgTable(
     payPeriod: text("pay_period"),
     yoeMin: integer("yoe_min"),
     enriched: boolean("enriched").default(false).notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow(),
+    intentScore: real("intent_score"),
+    intent: jsonb("intent"),
   },
   (t) => ({ uniq: uniqueIndex("jobs_source_company_ext").on(t.source, t.companyName, t.extId) }),
 );
@@ -189,6 +192,16 @@ export type MatchComponents = {
   exp: number;
   industry: number;
   missing: string[];
+};
+
+export type IntentSignal = {
+  score: number;               // 0-100, higher = more ghost-like
+  level: "ok" | "watch" | "ghost";
+  reasons: string[];
+  evergreen: boolean;
+  generic_title: boolean;
+  age_days: number | null;
+  checked_at: string;
 };
 
 export const userDismissedJobs = pgTable(

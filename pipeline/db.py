@@ -80,6 +80,15 @@ def insert_jobs(conn, jobs: list[Job], company_id: int | None = None) -> int:
             params,
         )
         new = cur.rowcount
+        # Bump last_seen_at for every req observed this sweep (new + existing).
+        # Newly-inserted rows already default to now(); this advances the ones
+        # that were skipped by ON CONFLICT, so we can later measure how long a
+        # req stays open and detect reposts. Keeps `new` (insert count) exact.
+        cur.executemany(
+            """UPDATE jobs SET last_seen_at = NOW()
+               WHERE source = %s AND company_name = %s AND ext_id = %s""",
+            [(j.source, j.company, j.job_id) for j in jobs],
+        )
     conn.commit()
     return max(new, 0)
 
