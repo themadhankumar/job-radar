@@ -48,11 +48,18 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
 
   // Referral rows always float to the top, independent of sort/score — a warm
   // contact beats a slightly-higher match %. json_agg carries the matched
-  // contacts through so the drawer can show who to ping.
+  // contacts through so the drawer can show who to ping. Matches on ANY of a
+  // contact's employers (current or past), via referral_experiences — DISTINCT
+  // ON contact id so a contact with two stints at the same company doesn't
+  // appear twice.
   const referralAgg = sql`COALESCE((
-    SELECT json_agg(json_build_object('name', rc.name, 'relationship', rc.relationship, 'warmth', rc.warmth, 'status', rc.status))
-    FROM referral_contacts rc
-    WHERE rc.user_id = ${user.id} AND norm_employer(rc.company_name) = norm_employer(${schema.jobs.companyName})
+    SELECT json_agg(json_build_object('name', m.name, 'relationship', m.relationship, 'warmth', m.warmth, 'status', m.status))
+    FROM (
+      SELECT DISTINCT ON (rc.id) rc.id, rc.name, rc.relationship, rc.warmth, rc.status
+      FROM referral_contacts rc
+      JOIN referral_experiences re ON re.contact_id = rc.id
+      WHERE rc.user_id = ${user.id} AND norm_employer(re.company_name) = norm_employer(${schema.jobs.companyName})
+    ) m
   ), '[]'::json)`;
   const orderExprWithReferrals = sql`(CASE WHEN json_array_length(${referralAgg}) > 0 THEN 0 ELSE 1 END) ASC, ${orderExpr}`;
 

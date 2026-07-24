@@ -1,14 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Handshake, Info, Pencil, Trash2, X } from "lucide-react";
+import { Handshake, Info, Pencil, Sparkles, Trash2, X } from "lucide-react";
 import { track } from "@/lib/track";
+
+type Experience = {
+  companyName: string;
+  companyId: number | null;
+  role: string;
+  isCurrent: boolean;
+  startDate: string;
+  endDate: string;
+};
 
 type Contact = {
   id: number;
   name: string;
-  companyName: string;
-  companyId: number | null;
-  role: string | null;
+  experiences: Experience[];
   relationship: string;
   contactDetails: string | null;
   status: "not_asked" | "asked" | "referred" | "declined";
@@ -21,7 +28,14 @@ type Company = { id: number; name: string };
 const STATUSES = ["not_asked", "asked", "referred", "declined"] as const;
 const STATUS_LABEL: Record<string, string> = { not_asked: "Not asked", asked: "Asked", referred: "Referred", declined: "Declined" };
 
-const EMPTY_FORM = { id: 0, name: "", companyName: "", companyId: null as number | null, role: "", relationship: "", contactDetails: "", notes: "" };
+const EMPTY_EXPERIENCE: Experience = { companyName: "", companyId: null, role: "", isCurrent: false, startDate: "", endDate: "" };
+const EMPTY_FORM = { id: 0, name: "", experiences: [{ ...EMPTY_EXPERIENCE }] as Experience[], relationship: "", contactDetails: "", notes: "" };
+
+/** Current experience (or most recent) for the table's Company column. */
+function primaryExperience(experiences: Experience[]): Experience | null {
+  if (experiences.length === 0) return null;
+  return experiences.find((e) => e.isCurrent) ?? experiences[0];
+}
 
 export default function ReferralsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -30,6 +44,8 @@ export default function ReferralsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [profileText, setProfileText] = useState("");
+  const [parsing, setParsing] = useState(false);
 
   async function load() {
     const [c, co] = await Promise.all([
@@ -43,25 +59,74 @@ export default function ReferralsPage() {
 
   function startAdd() {
     setForm(EMPTY_FORM);
+    setProfileText("");
     setErr("");
     setOpen(true);
   }
   function startEdit(c: Contact) {
-    setForm({ id: c.id, name: c.name, companyName: c.companyName, companyId: c.companyId, role: c.role ?? "", relationship: c.relationship, contactDetails: c.contactDetails ?? "", notes: c.notes ?? "" });
+    setForm({
+      id: c.id,
+      name: c.name,
+      experiences: c.experiences.length ? c.experiences : [{ ...EMPTY_EXPERIENCE }],
+      relationship: c.relationship,
+      contactDetails: c.contactDetails ?? "",
+      notes: c.notes ?? "",
+    });
+    setProfileText("");
     setErr("");
     setOpen(true);
   }
 
+  function updateExperience(i: number, fields: Partial<Experience>) {
+    setForm((f) => ({ ...f, experiences: f.experiences.map((e, idx) => (idx === i ? { ...e, ...fields } : e)) }));
+  }
+  function addExperience() {
+    setForm((f) => ({ ...f, experiences: [...f.experiences, { ...EMPTY_EXPERIENCE }] }));
+  }
+  function removeExperience(i: number) {
+    setForm((f) => ({ ...f, experiences: f.experiences.filter((_, idx) => idx !== i) }));
+  }
+
+  async function parseProfile() {
+    if (profileText.trim().length < 50) { setErr("Paste more of the profile — that looks too short."); return; }
+    setParsing(true);
+    setErr("");
+    const res = await fetch("/api/referrals/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: profileText }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setParsing(false);
+    if (!res.ok) { setErr(data.error ?? "Couldn't parse that — add the roles manually instead."); return; }
+    setForm((f) => ({
+      ...f,
+      name: f.name || data.name || "",
+      experiences: data.experiences.map((e: Experience) => ({
+        companyName: e.companyName,
+        companyId: companies.find((c) => c.name.toLowerCase() === e.companyName.toLowerCase())?.id ?? null,
+        role: e.role,
+        isCurrent: e.isCurrent,
+        startDate: e.startDate,
+        endDate: e.endDate,
+      })),
+    }));
+  }
+
   async function save() {
-    if (!form.name.trim() || !form.companyName.trim() || !form.relationship.trim()) {
-      setErr("Name, company, and relationship are required.");
+    const experiences = form.experiences.filter((e) => e.companyName.trim());
+    if (!form.name.trim() || !form.relationship.trim() || experiences.length === 0) {
+      setErr("Name, relationship, and at least one employer are required.");
       return;
     }
     setBusy(true);
     setErr("");
     const wasNew = !form.id;
-    const match = companies.find((c) => c.name.toLowerCase() === form.companyName.trim().toLowerCase());
-    const body = { ...form, companyId: match?.id ?? null };
+    const resolved = experiences.map((e) => ({
+      ...e,
+      companyId: companies.find((c) => c.name.toLowerCase() === e.companyName.trim().toLowerCase())?.id ?? null,
+    }));
+    const body = { ...form, experiences: resolved };
     const res = await fetch("/api/referrals", {
       method: form.id ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -70,7 +135,7 @@ export default function ReferralsPage() {
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) { setErr(data.error ?? "Could not save — try again."); return; }
-    if (wasNew) track("referral_add", { companyId: match?.id ?? null });
+    if (wasNew) track("referral_add", { companyId: resolved[0]?.companyId ?? null });
     setOpen(false);
     load();
   }
@@ -126,10 +191,16 @@ export default function ReferralsPage() {
               </tr>
             </thead>
             <tbody>
-              {contacts.map((c) => (
+              {contacts.map((c) => {
+                const primary = primaryExperience(c.experiences);
+                const moreCount = c.experiences.length - (primary ? 1 : 0);
+                return (
                 <tr key={c.id} className="border-b border-[rgb(var(--hairline)/0.10)] last:border-0">
-                  <td className="px-5 py-3.5 font-medium">{c.name}{c.role && <span className="t-muted font-normal"> · {c.role}</span>}</td>
-                  <td className="px-5 py-3.5">{c.companyName}</td>
+                  <td className="px-5 py-3.5 font-medium">{c.name}{primary?.role && <span className="t-muted font-normal"> · {primary.role}</span>}</td>
+                  <td className="px-5 py-3.5">
+                    {primary?.companyName ?? "—"}
+                    {moreCount > 0 && <span className="t-muted"> (+{moreCount} more)</span>}
+                  </td>
                   <td className="t-muted px-5 py-3.5">{c.relationship}</td>
                   <td className="px-5 py-3.5">
                     <select value={c.warmth ?? ""} onChange={(e) => patch(c.id, { warmth: (e.target.value || null) as Contact["warmth"] })}
@@ -152,7 +223,8 @@ export default function ReferralsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </section>
@@ -160,20 +232,51 @@ export default function ReferralsPage() {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div className="surface w-full max-w-md rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="surface max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold">{form.id ? "Edit contact" : "Add a referral contact"}</h2>
               <button aria-label="Close" onClick={() => setOpen(false)} className="t-muted hover:text-inherit"><X size={16} /></button>
             </div>
             <div className="space-y-3">
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name *" className="input w-full" autoFocus />
-              <input value={form.companyName} onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))} placeholder="Company *" className="input w-full" list="referral-companies" />
-              <datalist id="referral-companies">
-                {companies.map((c) => <option key={c.id} value={c.name} />)}
-              </datalist>
-              <input value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder="Their role (optional)" className="input w-full" />
               <input value={form.relationship} onChange={(e) => setForm((f) => ({ ...f, relationship: e.target.value }))} placeholder="Relationship * (e.g. college friend, cousin)" className="input w-full" />
               <input value={form.contactDetails} onChange={(e) => setForm((f) => ({ ...f, contactDetails: e.target.value }))} placeholder="Contact details (email, phone, LinkedIn…)" className="input w-full" />
+
+              <div className="surface-2 rounded-lg p-3">
+                <p className="t-muted mb-1.5 text-[11px] font-medium uppercase tracking-[0.08em]">Paste LinkedIn profile (optional)</p>
+                <textarea value={profileText} onChange={(e) => setProfileText(e.target.value)}
+                  placeholder="Copy their name and Experience section from LinkedIn and paste it here…"
+                  className="input min-h-20 w-full text-sm" />
+                <button type="button" className="btn-ghost mt-2 inline-flex h-7 items-center gap-1.5 px-2.5 text-xs" disabled={parsing} onClick={parseProfile}>
+                  <Sparkles size={12} /> {parsing ? "Parsing…" : "Parse work history"}
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <p className="t-muted text-[11px] font-medium uppercase tracking-[0.08em]">Employers *</p>
+                {form.experiences.map((e, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] p-2">
+                    <input value={e.companyName} onChange={(ev) => updateExperience(i, { companyName: ev.target.value })}
+                      placeholder="Company *" className="input h-8 min-w-0 flex-1 text-sm" list="referral-companies" />
+                    <input value={e.role} onChange={(ev) => updateExperience(i, { role: ev.target.value })}
+                      placeholder="Role" className="input h-8 min-w-0 flex-1 text-sm" />
+                    <input value={e.startDate} onChange={(ev) => updateExperience(i, { startDate: ev.target.value })}
+                      placeholder="Start" className="input h-8 w-20 text-sm" />
+                    <input value={e.endDate} onChange={(ev) => updateExperience(i, { endDate: ev.target.value })}
+                      placeholder="End" disabled={e.isCurrent} className="input h-8 w-20 text-sm disabled:opacity-50" />
+                    <label className="t-muted flex items-center gap-1 text-xs">
+                      <input type="checkbox" checked={e.isCurrent} onChange={(ev) => updateExperience(i, { isCurrent: ev.target.checked, endDate: ev.target.checked ? "" : e.endDate })} />
+                      Current
+                    </label>
+                    <button type="button" aria-label="Remove role" className="t-muted rounded p-1 hover:text-[rgb(var(--danger))]" onClick={() => removeExperience(i)}><X size={13} /></button>
+                  </div>
+                ))}
+                <datalist id="referral-companies">
+                  {companies.map((c) => <option key={c.id} value={c.name} />)}
+                </datalist>
+                <button type="button" className="btn-ghost h-7 px-2.5 text-xs" onClick={addExperience}>+ Add role</button>
+              </div>
+
               <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Notes (optional)" className="input min-h-16 w-full text-sm" />
               {err && <p className="t-danger text-xs">{err}</p>}
               <div className="flex justify-end gap-2 pt-1">
