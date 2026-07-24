@@ -237,7 +237,9 @@ export const referralContacts = pgTable("referral_contacts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
-  companyName: text("company_name").notNull(),
+  // company_name/role/company_id are deprecated in favor of referralExperiences
+  // below (see 0017) — left nullable/unused here until 0018 drops them.
+  companyName: text("company_name"),
   companyId: integer("company_id").references(() => companies.id, { onDelete: "set null" }),
   role: text("role"),
   relationship: text("relationship").notNull(),
@@ -247,6 +249,18 @@ export const referralContacts = pgTable("referral_contacts", {
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const referralExperiences = pgTable("referral_experiences", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").references(() => referralContacts.id, { onDelete: "cascade" }).notNull(),
+  companyName: text("company_name").notNull(),
+  companyId: integer("company_id").references(() => companies.id, { onDelete: "set null" }),
+  role: text("role"),
+  isCurrent: boolean("is_current").default(false).notNull(),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const feedback = pgTable("feedback", {

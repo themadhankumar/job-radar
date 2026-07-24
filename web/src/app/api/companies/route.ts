@@ -16,7 +16,8 @@ export async function GET() {
       ats: schema.companies.ats,
       hasReferral: sql<boolean>`EXISTS (
         SELECT 1 FROM referral_contacts rc
-        WHERE rc.user_id = ${uid} AND norm_employer(rc.company_name) = norm_employer(${schema.companies.name})
+        JOIN referral_experiences re ON re.contact_id = rc.id
+        WHERE rc.user_id = ${uid} AND norm_employer(re.company_name) = norm_employer(${schema.companies.name})
       )`,
     })
     .from(schema.companies)
