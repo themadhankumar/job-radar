@@ -237,11 +237,6 @@ export const referralContacts = pgTable("referral_contacts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
-  // company_name/role/company_id are deprecated in favor of referralExperiences
-  // below (see 0017) — left nullable/unused here until 0018 drops them.
-  companyName: text("company_name"),
-  companyId: integer("company_id").references(() => companies.id, { onDelete: "set null" }),
-  role: text("role"),
   relationship: text("relationship").notNull(),
   contactDetails: text("contact_details"),
   status: text("status", { enum: ["not_asked", "asked", "referred", "declined"] }).default("not_asked").notNull(),

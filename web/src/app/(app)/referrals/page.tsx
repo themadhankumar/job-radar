@@ -198,8 +198,12 @@ export default function ReferralsPage() {
                 <tr key={c.id} className="border-b border-[rgb(var(--hairline)/0.10)] last:border-0">
                   <td className="px-5 py-3.5 font-medium">{c.name}{primary?.role && <span className="t-muted font-normal"> · {primary.role}</span>}</td>
                   <td className="px-5 py-3.5">
-                    {primary?.companyName ?? "—"}
-                    {moreCount > 0 && <span className="t-muted"> (+{moreCount} more)</span>}
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                      <span>{primary?.companyName ?? "—"}</span>
+                      {c.experiences.filter((e) => e !== primary).map((e, i) => (
+                        <span key={i} className="t-muted text-xs">{e.companyName}{i < moreCount - 1 ? "," : ""}</span>
+                      ))}
+                    </div>
                   </td>
                   <td className="t-muted px-5 py-3.5">{c.relationship}</td>
                   <td className="px-5 py-3.5">
@@ -232,7 +236,7 @@ export default function ReferralsPage() {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div className="surface max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="surface max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold">{form.id ? "Edit contact" : "Add a referral contact"}</h2>
               <button aria-label="Close" onClick={() => setOpen(false)} className="t-muted hover:text-inherit"><X size={16} /></button>
@@ -255,20 +259,24 @@ export default function ReferralsPage() {
               <div className="space-y-2">
                 <p className="t-muted text-[11px] font-medium uppercase tracking-[0.08em]">Employers *</p>
                 {form.experiences.map((e, i) => (
-                  <div key={i} className="flex flex-wrap items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] p-2">
-                    <input value={e.companyName} onChange={(ev) => updateExperience(i, { companyName: ev.target.value })}
-                      placeholder="Company *" className="input h-8 min-w-0 flex-1 text-sm" list="referral-companies" />
-                    <input value={e.role} onChange={(ev) => updateExperience(i, { role: ev.target.value })}
-                      placeholder="Role" className="input h-8 min-w-0 flex-1 text-sm" />
-                    <input value={e.startDate} onChange={(ev) => updateExperience(i, { startDate: ev.target.value })}
-                      placeholder="Start" className="input h-8 w-20 text-sm" />
-                    <input value={e.endDate} onChange={(ev) => updateExperience(i, { endDate: ev.target.value })}
-                      placeholder="End" disabled={e.isCurrent} className="input h-8 w-20 text-sm disabled:opacity-50" />
-                    <label className="t-muted flex items-center gap-1 text-xs">
-                      <input type="checkbox" checked={e.isCurrent} onChange={(ev) => updateExperience(i, { isCurrent: ev.target.checked, endDate: ev.target.checked ? "" : e.endDate })} />
-                      Current
-                    </label>
-                    <button type="button" aria-label="Remove role" className="t-muted rounded p-1 hover:text-[rgb(var(--danger))]" onClick={() => removeExperience(i)}><X size={13} /></button>
+                  <div key={i} className="space-y-1.5 rounded-lg border border-[rgb(var(--border))] p-2">
+                    <div className="flex gap-1.5">
+                      <input value={e.companyName} onChange={(ev) => updateExperience(i, { companyName: ev.target.value })}
+                        placeholder="Company *" className="input h-8 min-w-0 flex-[3] text-sm" list="referral-companies" />
+                      <input value={e.role} onChange={(ev) => updateExperience(i, { role: ev.target.value })}
+                        placeholder="Role" className="input h-8 min-w-0 flex-[2] text-sm" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <input value={e.startDate} onChange={(ev) => updateExperience(i, { startDate: ev.target.value })}
+                        placeholder="Start (e.g. Mar 2022)" className="input h-8 w-28 text-sm" />
+                      <input value={e.endDate} onChange={(ev) => updateExperience(i, { endDate: ev.target.value })}
+                        placeholder="End" disabled={e.isCurrent} className="input h-8 w-28 text-sm disabled:opacity-50" />
+                      <label className="t-muted flex items-center gap-1 text-xs">
+                        <input type="checkbox" checked={e.isCurrent} onChange={(ev) => updateExperience(i, { isCurrent: ev.target.checked, endDate: ev.target.checked ? "" : e.endDate })} />
+                        Current
+                      </label>
+                      <button type="button" aria-label="Remove role" className="t-muted ml-auto rounded p-1 hover:text-[rgb(var(--danger))]" onClick={() => removeExperience(i)}><X size={13} /></button>
+                    </div>
                   </div>
                 ))}
                 <datalist id="referral-companies">
